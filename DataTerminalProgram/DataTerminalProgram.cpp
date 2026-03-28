@@ -7,5 +7,6 @@ DataTerminalProgram::DataTerminalProgram(QWidget *parent)
 }
 
 DataTerminalProgram::~DataTerminalProgram()
-{}
+{
+}
 

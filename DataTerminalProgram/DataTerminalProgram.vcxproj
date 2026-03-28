@@ -97,7 +97,12 @@
     <QtUic Include="DataTerminalProgram.ui" />
     <QtMoc Include="DataTerminalProgram.h" />
     <ClCompile Include="DataTerminalProgram.cpp" />
+    <ClCompile Include="DeviceCom\TcpClient.cpp" />
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CRC32.h" />
+    <ClInclude Include="DeviceCom\TcpClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

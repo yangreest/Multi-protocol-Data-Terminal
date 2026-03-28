@@ -21,6 +21,9 @@
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
       <Extensions>ts</Extensions>
     </Filter>
+    <Filter Include="DeviceCom">
+      <UniqueIdentifier>{5f72c9a4-d101-4547-b9a8-c2df07b25e65}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="DataTerminalProgram.qrc">
@@ -40,5 +43,16 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DeviceCom\TcpClient.cpp">
+      <Filter>DeviceCom</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CRC32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceCom\TcpClient.h">
+      <Filter>DeviceCom</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
