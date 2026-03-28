@@ -1,42 +1,28 @@
-/*
- * @@File: 
- * @@version: v1.0
- * @@Author: Y.Zheng &SC
- * @Date: 2026-03-06 21:51:07
- * @LastEditTime: 2026-03-17 11:34:49
- * @LastEditors: Y.Zheng
- * @@Desc: 
- */
 #pragma once
 #include <condition_variable>
 #include <queue>
-#include <string>
-#include <mutex>
-#include <functional>
 
-class CTcpClientCom
+#include "IDeviceCom.h"
+#include <string>
+
+class CTcpClientCom : public IDeviceCom
 {
 public:
 	CTcpClientCom();
-	~CTcpClientCom();  // 添加析构函数声明
-	void SetParam(const char* pComName, int nComPort) ;
-	void RegisterConnectStatusCallBack(const std::function<void(bool, int)>& f);
-	bool BeginWork() ;
-	bool EndWork() ;
-	    // 同步发送数据并等待响应
-    bool SyncWrite(const uint8_t* sendData, size_t sendLen, 
-                   uint8_t* receiveBuffer, size_t bufferSize, 
-                   size_t& receivedLen, int timeoutMs = 5000);
-    
+	void SetParam(const char* pComName, int nComPort) override;
+	void RegisterReadDataCallBack(const std::function<void(uint8_t*, int, uint64_t)>& f) override;
+	void RegisterConnectStatusCallBack(const std::function<void(bool, int)>& f) override;
+	bool Write(uint8_t* data, size_t len) override;
+	bool BeginWork() override;
+	bool EndWork() override;
+
 private:
 	void ConnectionThread();
 	void Connect();
 	void CloseSocket();
 	void SetConnected(bool b);
-
-	    // 同步接收辅助函数
-    bool WaitForSyncResponse(uint8_t* buffer_t, size_t bufferSize, 
-                            size_t& receivedLen, int timeoutMs);
+	void SendThread();
+	void ReceiveThread();
 
 	std::string m_strTargetIp;
 
@@ -45,9 +31,17 @@ private:
 	uint64_t m_socket = 0;
 
 	std::atomic<bool> m_running;
-	std::atomic<bool> m_connected; // 
+	std::atomic<bool> m_connected;
 
 	std::thread m_connectionThread;
+	std::thread m_receiveThread;
+	std::thread m_sendThread;
+
+	std::queue<std::vector<uint8_t>> m_sendQueue;
+	std::mutex m_sendQueueMutex;
+	std::condition_variable m_sendQueueCV;
 
 	std::function<void(bool, int)> m_connectCallback;
+
+	std::function<void(uint8_t*, int, uint64_t)> m_function_ReadDataCallBack;
 };
