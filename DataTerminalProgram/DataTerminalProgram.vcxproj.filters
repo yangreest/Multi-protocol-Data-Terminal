@@ -54,5 +54,13 @@
     <ClInclude Include="DeviceCom\TcpClient.h">
       <Filter>DeviceCom</Filter>
     </ClInclude>
+    <ClInclude Include="CommunicationProtocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HexString_Usage.md" />
+    <None Include="Protocol_QuickReference.md" />
+    <None Include="Protocol_Verification.md" />
   </ItemGroup>
 </Project>
