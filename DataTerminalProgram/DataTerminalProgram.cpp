@@ -3,11 +3,26 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 #include <QDebug>
+#include <QTimer>
 
 DataTerminalProgram::DataTerminalProgram(QWidget* parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
+
+
+	QStringList portList = enumerateSerialPorts();
+	ui.comboBox->addItems(portList);
+
+	// 初始化队列和工作线程
+	m_sendQueue = new SerialDataQueue();
+	m_receiveQueue = new SerialDataQueue();
+	m_serialWorker = nullptr;
+
+	// 启动接收数据处理定时器
+	QTimer* receiveTimer = new QTimer(this);
+	connect(receiveTimer, &QTimer::timeout, this, &DataTerminalProgram::processReceivedData);
+	receiveTimer->start(50); // 每50ms检查一次接收数据
 }
 
 DataTerminalProgram::~DataTerminalProgram()
@@ -16,22 +31,74 @@ DataTerminalProgram::~DataTerminalProgram()
 
 void DataTerminalProgram::on_pushButton_2_clicked()
 {
-	m_pComDevice = new CTcpClientCom();
-
-	QString IP = ui.lineEdit->text();
-    bool ok;
-	int nPort = ui.lineEdit_2->text().toInt(&ok);
-    if (!ok)
-    {
-        qDebug() << "Invalid port number";
-        return;
-    }
-
-	m_pComDevice->SetParam(IP.toStdString().c_str(), nPort);
-	m_pComDevice->RegisterReadDataCallBack(std::bind(&DataTerminalProgram::ReceiveNewData, this, std::placeholders::_1, std::placeholders::_2));
-	m_pComDevice->RegisterConnectStatusCallBack(std::bind(&DataTerminalProgram::ComDeviceConnectionChanged, this, std::placeholders::_1, std::placeholders::_2, 0));
-	m_pComDevice->BeginWork();
+	if (ui.pushButton_2->text() == "连接") {
+		openSerialPort();
+	}
+	else {
+		closeSerialPort();
+		ui.pushButton_2->setText("连接");
+		//on_btnClear_clicked();
+	}
 }
+
+void DataTerminalProgram::on_pushButton_5_clicked()
+{
+}
+
+void DataTerminalProgram::onSerialError(const QString& error)
+{
+	qDebug() <<"onSerialError :"<< error;
+}
+
+void DataTerminalProgram::onSerialPortOpened()
+{
+    qDebug() << "串口已打开";
+}
+
+void DataTerminalProgram::onSerialPortClosed()
+{
+    qDebug() << "串口已关闭";
+}
+
+// 枚举可用串口的函数
+QStringList DataTerminalProgram::enumerateSerialPorts()
+{
+	QStringList portList;
+
+#ifdef Q_OS_WIN
+	// Windows下通过查询注册表或试探法获取串口列表
+	for (int i = 1; i <= 10; i++) {
+		QString portName = QString("COM%1").arg(i);
+		QextSerialPort port(portName, QextSerialPort::Polling);
+		// 尝试打开端口来检测是否存在
+		if (port.open(QIODevice::ReadWrite)) {
+			portList.append(portName);
+			port.close();
+			port.deleteLater();
+		}
+		else {
+			// 忽略打开失败的端口
+			continue;
+		}
+	}
+#else
+	// Linux/macOS下扫描设备文件
+	QDir dir("/dev");
+	QStringList nameFilters;
+	nameFilters << "ttyS*" << "ttyUSB*" << "ttyACM*" << "cu.*" << "tty.*";
+
+	QFileInfoList fileInfos = dir.entryInfoList(nameFilters, QDir::Files | QDir::System);
+	foreach(const QFileInfo & fileInfo, fileInfos) {
+		QString fileName = fileInfo.fileName();
+		if (!fileName.startsWith("ttyprintk")) { // 排除内核打印端口
+			portList.append(fileInfo.absoluteFilePath());
+		}
+	}
+#endif
+
+	return portList;
+}
+
 
 QString DataTerminalProgram::formatXmlString(const std::string& str)
 {
@@ -86,7 +153,7 @@ QString DataTerminalProgram::getPacketTypeName(uint32_t packetTypeCode)
 	return QString();
 }
 
-void DataTerminalProgram::ReceiveNewData(const uint8_t* p, int len)
+void DataTerminalProgram::processReceivedData()
 {
 }
 
@@ -104,6 +171,37 @@ void DataTerminalProgram::ComDeviceConnectionChanged(const bool connected, int g
         ui.pushButton_2->setText("掉线请重试");
         qDebug() << "设备已断开";
     }
+}
+
+void DataTerminalProgram::openSerialPort()
+{
+	if (m_serialWorker && m_serialWorker->isRunning()) {
+		return;
+	}
+
+	QString portName = ui.comboBox->currentText();
+
+	m_serialWorker = new SerialWorker(m_sendQueue, m_receiveQueue);
+	m_serialWorker->setPortSettings(portName);
+
+	connect(m_serialWorker, &SerialWorker::errorOccurred,
+		this, &DataTerminalProgram::onSerialError);
+	connect(m_serialWorker, &SerialWorker::portOpened,
+		this, &DataTerminalProgram::onSerialPortOpened);
+	connect(m_serialWorker, &SerialWorker::portClosed,
+		this, &DataTerminalProgram::onSerialPortClosed);
+
+	m_serialWorker->start();
+}
+
+void DataTerminalProgram::closeSerialPort()
+{
+	if (m_serialWorker) {
+		m_serialWorker->stop();
+		m_serialWorker->wait();
+		m_serialWorker->deleteLater();
+		m_serialWorker = nullptr;
+	}
 }
 
 void DataTerminalProgram::on_pushButton_clicked()

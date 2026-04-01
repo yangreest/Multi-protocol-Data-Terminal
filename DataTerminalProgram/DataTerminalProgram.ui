@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>817</width>
+    <width>649</width>
     <height>671</height>
    </rect>
   </property>
@@ -31,7 +31,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>799</width>
+         <width>631</width>
          <height>212</height>
         </rect>
        </property>
@@ -81,7 +81,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>799</width>
+         <width>631</width>
          <height>68</height>
         </rect>
        </property>
@@ -112,34 +112,25 @@
           <item>
            <widget class="QLabel" name="label">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Ip</string>
+             <string>串口列表</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit"/>
+           <widget class="QComboBox" name="comboBox"/>
           </item>
           <item>
-           <widget class="QLabel" name="label_2">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
+           <widget class="QPushButton" name="pushButton_5">
             <property name="text">
-             <string>prot</string>
+             <string>查找</string>
             </property>
            </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="lineEdit_2"/>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_2">

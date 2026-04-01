@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DataTerminalProgram", "DataTerminalProgram\DataTerminalProgram.vcxproj", "{0E7C5B47-9D1A-47CF-9968-EB00F4C91FA6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "comtool", "comtool\comtool.vcxproj", "{283ED6AC-601C-3C06-899A-26EF954D0DFE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{0E7C5B47-9D1A-47CF-9968-EB00F4C91FA6}.Debug|x64.Build.0 = Debug|x64
 		{0E7C5B47-9D1A-47CF-9968-EB00F4C91FA6}.Release|x64.ActiveCfg = Release|x64
 		{0E7C5B47-9D1A-47CF-9968-EB00F4C91FA6}.Release|x64.Build.0 = Release|x64
+		{283ED6AC-601C-3C06-899A-26EF954D0DFE}.Debug|x64.ActiveCfg = Debug|x64
+		{283ED6AC-601C-3C06-899A-26EF954D0DFE}.Debug|x64.Build.0 = Debug|x64
+		{283ED6AC-601C-3C06-899A-26EF954D0DFE}.Release|x64.ActiveCfg = Release|x64
+		{283ED6AC-601C-3C06-899A-26EF954D0DFE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
