@@ -7,6 +7,13 @@
 #include "Modbus.h"
 #include "serialdataqueue.h"
 #include "serialworker.h"
+#include <QTreeWidget>
+
+
+//#include "zlib.h"
+//#include "ioapi.h"
+//#include "zip.h"
+//#include "unzip.h"
 
 namespace Ui
 {
@@ -19,6 +26,10 @@ class frmComTool : public QWidget
 
 public:
 	explicit frmComTool(QWidget* parent = 0);
+	// 初始化树形控件
+	void initTreeWidget();
+	void parseXmlToTree(const QString& xmlData);
+	void addTreeNode(QTreeWidgetItem* parentItem, const QString& nodeName);
 	~frmComTool();
 
 private:
@@ -70,6 +81,11 @@ private slots:
 
 	QString getPacketTypeName(uint32_t packetTypeCode);
 	QString formatXmlString(const std::string& str);
+	//QByteArray qt_gzip_decompress(const QByteArray& gzipData);
+	//std::vector<uint8_t> qt_gzip_compress(std::vector<uint8_t> gzipData);
+	std::vector<uint8_t> qt_gzip_load_file(std::string filepath);
+	bool  qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data);
+	bool zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files, std::vector<uint8_t>& zip_data);
 
 private slots:
 	void onSerialError(const QString& error);
@@ -94,7 +110,9 @@ private slots:
 
 	void on_pushButton_clicked();
 	void on_pushButton_3_clicked();
+	void on_pushButton_2_clicked();
 	void on_pushButton_4_clicked();
+	void on_pushButton_5_clicked();
 
 	void on_btnClear_clicked();
 	//void on_btnData_clicked();

@@ -5,7 +5,7 @@
 #include <CommunicationProtocol.h>
 #include <InfraredSpectrumData.h>
 #include <ImageData.h>
-
+#include <QByteArray>
 
 frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool)
 {
@@ -15,6 +15,60 @@ frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool
 	openSerialPort();
 
 	QtHelper::setFormInCenter(this);
+}
+
+void frmComTool::initTreeWidget()
+{
+	ui->treeWidget->setHeaderLabel("检测任务结构");
+}
+
+void frmComTool::parseXmlToTree(const QString& xmlData)
+{
+	QXmlStreamReader reader(xmlData);
+	QTreeWidgetItem* currentParent = nullptr;
+
+	// 逐行解析XML
+	while (!reader.atEnd()) {
+		if (reader.readNextStartElement()) {
+			// 解析主任务
+			if (reader.name() == "main_task") {
+				QString name = reader.attributes().value("name").toString();
+				currentParent = new QTreeWidgetItem(ui->treeWidget);
+				currentParent->setText(0, name);
+				currentParent->setExpanded(true);
+			}
+			// 解析子任务
+			else if (reader.name() == "sub_task") {
+				QString name = reader.attributes().value("name").toString();
+				addTreeNode(currentParent, name);
+				currentParent = currentParent->child(currentParent->childCount() - 1);
+			}
+			// 解析间隔(clearance)
+			else if (reader.name() == "clearance") {
+				QString name = reader.attributes().value("name").toString();
+				addTreeNode(currentParent, name);
+				currentParent = currentParent->child(currentParent->childCount() - 1);
+			}
+			// 解析测试点
+			else if (reader.name() == "test_point") {
+				QString name = reader.attributes().value("name").toString();
+				addTreeNode(currentParent, name);
+			}
+		}
+	}
+
+	// 异常处理
+	if (reader.hasError()) {
+		qDebug() << "XML解析错误：" << reader.errorString();
+	}
+}
+
+void frmComTool::addTreeNode(QTreeWidgetItem* parentItem, const QString& nodeName)
+{
+	QTreeWidgetItem* item = new QTreeWidgetItem(parentItem);
+	item->setText(0, nodeName);
+	// 自动展开节点
+	item->setExpanded(true);
 }
 
 frmComTool::~frmComTool()
@@ -125,79 +179,23 @@ void frmComTool::processReceivedData()
 
 	while (!m_receiveQueue->isReceiveQueueEmpty()) {
 		QByteArray data = m_receiveQueue->dequeueReceivedData();
-		if (!data.isEmpty()) {
-			// 处理接收到的数据
+		if (!data.isEmpty()) 
+		{
+			CommunicationProtocol protocol;
+			// 从QByteArray 到std::vector<uint8_t>
+            std::vector<uint8_t> dataVector(data.begin(), data.end());
+          
+            if (protocol.buildFromBytes(dataVector))
+            { 
+				if (protocol.packetTypeCode == 0x00000001)
+				{
+					parseXmlToTree(formatXmlString(protocol.getServiceDataString()));
+				}
 
-			append(1, QtHelperData::byteArrayToHexStr(data));
-
-
-			uint8_t type = static_cast<uint8_t>(data.at(data.size() - 1));
-			uint16_t resultData = 0;
-			resultData = data[3] << 8 | data[4];
-			if (type == 0x00)
+            }
+			else
 			{
-				//ui->lineEdit_Station->setText(QString::number(resultData));
-			}
-			else if (type == 0x01)
-			{
-				//ui->lineEdit_BT->setText(QString::number(resultData * 1200));
-			}
-			else if (type == 0x02)
-			{
-				//ui->lineEdit_Trigger->setText(QString::number(resultData));
-			}
-			else if (type == 0x10)
-			{
-				QString resultinfo = "";
-				if (resultData == 0x00)
-				{
-					if (m_state == 2)
-					{
-						m_state = 3;
-					}
-					resultinfo = "待机";
-				}
-				else if (resultData == 0x01)
-				{
-					resultinfo = "触发";
-				}
-				else if (resultData == 0x02)
-				{
-					m_state = 2;
-					resultinfo = "触发完成";
-				}
-				//ui->lineEdit_State->setText(resultinfo);
-				//ui->labelState->setStyleSheet("color:rgb(220,220,222);");
-				//ui->labelState->setText(resultinfo);
-			}
-			else if (type == 0x11)
-			{
-				m_state = 4;
-				QString resultinfo = "";
-				if (resultData == 0x00)
-				{
-					//ui->labelState 设置成红色
-				//	ui->labelState->setStyleSheet("color:rgb(220,12,12);");
-					resultinfo = "零值";
-				}
-				else if (resultData == 0x01)
-				{
-					//ui->labelState->setStyleSheet("color:rgb(12,220,12);");
-					resultinfo = "正常";
-				}
-				else if (resultData == 0x02)
-				{
-					//ui->labelState->setStyleSheet("color:rgb(220,220,12);");
-					resultinfo = "未知";
-				}
-				//	ui->lineEdit_Result->setText(resultinfo);
-					//ui->labelState->setText(resultinfo);
-			}
-			else if (type == 0x12)
-			{
-				//ui->progressBar->setValue(resultData);
-				//ui->labelPower->setText(QString("电量%1%").arg(QString::number(resultData)));
-				//ui->battery->setValue((int)resultData);
+				qDebug() << "CommunicationProtocol::buildFromBytes() failed";
 			}
 
 		}
@@ -635,7 +633,9 @@ void  frmComTool::on_pushButton_clicked()
 		ui->plainTextEdit->appendPlainText(QString("报文类型：%1;编码：%2").arg(getPacketTypeName(protocol.packetTypeCode)).arg(QString("0x%1").arg(protocol.packetTypeCode, 0, 16).toUpper()));
 		std::string standardXml = protocol.getServiceDataString();
 		// 如果plainTextEdit是QPlainTextEdit类型，可以直接追加
-		ui->plainTextEdit->appendPlainText(formatXmlString(standardXml));
+		QString xmlData = formatXmlString(standardXml);
+		ui->plainTextEdit->appendPlainText(xmlData);
+		parseXmlToTree(xmlData);
 		ui->plainTextEdit->setFont(QFont("Consolas", 10)); // 等宽字体，显示更美观
 
 		// 验证 CRC
@@ -652,91 +652,179 @@ void  frmComTool::on_pushButton_clicked()
 	{
 		qDebug() << "解析失败";
 	}
+	// 将protocol.detectionFileData 保存成zip文件
+    //qDebug() << "保存检测文件...";
+    //qt_gzip_save_file("detection_file.zip", protocol.detectionFileData);
+    //qDebug() << "检测文件保存成功！";
 
-	// 创建 ImageData 对象并解析
-	ImageData imageData;
+	//// 解压
+	//if (protocol.compressionFlag == 1)
+	//{
 
-	if (imageData.parseFromBytes(protocol.detectionFileData))
+	//	qDebug() << "开始解压...";
+	//	std::vector<uint8_t> uncompressedData = qt_gzip_compress(protocol.detectionFileData);
+	//	if (!uncompressedData.empty())
+	//	{
+	//		qDebug() << "解压成功！";
+	//		protocol.setDetectionFile(uncompressedData);
+	//	}
+	//	else
+	//	{
+	//		qDebug() << "解压失败！";
+	//	}
+	//}
+
+	// 从本地文件中读取二进制数据
+	
+}
+
+
+// 功能：将多个文件压缩到 内存ZIP 数据流
+//bool frmComTool::zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files,std::vector<uint8_t>& zip_data) {
+	//// 1. 创建内存ZIP
+	//zlib_filefunc_def zff;
+	//fill_fopen_filefunc(&zff);
+
+	//zipFile zf = zipOpen2(nullptr, APPEND_STATUS_CREATE, nullptr, &zff);
+	//if (!zf) return false;
+
+	//// 2. 逐个添加文件
+	//for (const auto& file : files) {
+	//	const std::string& filename = file.first;
+	//	const std::vector<uint8_t>& data = file.second;
+
+	//	zipOpenNewFileInZip(
+	//		zf,
+	//		filename.c_str(),
+	//		nullptr,
+	//		nullptr, 0,
+	//		nullptr, 0,
+	//		nullptr,
+	//		Z_DEFLATED,
+	//		Z_DEFAULT_COMPRESSION
+	//	);
+
+	//	zipWriteInFileInZip(zf, data.data(), data.size());
+	//	zipCloseFileInZip(zf);
+	//}
+
+	//// 3. 关闭并获取内存ZIP
+	//zipClose(zf, nullptr);
+
+	//// 这里省略从内存获取ZIP数据的代码（需要ioapi_mem配合）
+	//// 完整代码我可以一次性给你全套
+	//return true;
+//}
+
+// Qt 原生解 GZIP（适配电力规约报文）
+//QByteArray frmComTool::qt_gzip_decompress(const QByteArray& gzipData)
+//{
+	//if (gzipData.isEmpty())
+	//	return QByteArray();
+
+	//z_stream strm;
+	//memset(&strm, 0, sizeof(z_stream));
+
+	//// 重点：告诉zlib这是标准gzip格式
+	//if (inflateInit2(&strm, MAX_WBITS | 32) != Z_OK) {
+	//	qDebug() << "zlib初始化失败";
+	//	return QByteArray();
+	//}
+
+	//strm.next_in = (Bytef*)gzipData.constData();
+	//strm.avail_in = (uInt)gzipData.size();
+
+	//QByteArray result;
+	//const int BUF_SIZE = 4096;
+	//unsigned char buffer[BUF_SIZE];
+
+	//do {
+	//	strm.avail_out = BUF_SIZE;
+	//	strm.next_out = buffer;
+
+	//	int ret = inflate(&strm, Z_NO_FLUSH);
+	//	if (ret < 0 && ret != Z_STREAM_END) {
+	//		qDebug() << "解压错误:" << ret;
+	//		inflateEnd(&strm);
+	//		return QByteArray();
+	//	}
+
+	//	int have = BUF_SIZE - strm.avail_out;
+	//	result.append((char*)buffer, have);
+
+	//} while (strm.avail_out == 0);
+
+	//inflateEnd(&strm);
+	//return result;
+//}
+
+//std::vector<uint8_t> frmComTool::qt_gzip_compress(std::vector<uint8_t> gzipData)
+//{
+	// 将std::vector 转换为 QByteArray
+  //  QByteArray zlibData = QByteArray::fromRawData(reinterpret_cast<const char*>(gzipData.data()), gzipData.size());
+	//QByteArray result = qt_gzip_decompress(zlibData);
+  //  return std::vector<uint8_t>(result.begin(), result.end());
+//}
+
+std::vector<uint8_t> frmComTool::qt_gzip_load_file(std::string filepath)
+{
+    QFile file(filepath.c_str());
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        qDebug() << "无法打开文件" << filepath;
+        return std::vector<uint8_t>();
+    }
+	QByteArray fileData = file.readAll();
+    return std::vector<uint8_t>(fileData.begin(), fileData.end());
+	
+}
+
+bool frmComTool::qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data)
+{
+    QFile file(fileName.c_str());
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        qDebug() << "无法打开文件" << fileName;
+        return false;
+    }
+	if (file.write(QByteArray::fromRawData(reinterpret_cast<const char*>(data.data()), data.size())) == data.size())
 	{
-		qDebug() << "=== 解析成功 ===";
-
-		// 1. 基本信息
-		qDebug() << "文件长度：" << imageData.fileLength << " 字节";
-		qDebug() << "规范版本号：" << imageData.getVersionString();
-		qDebug() << "生成时间：" << imageData.getCreateTimeString();
-		qDebug() << "站点名称：" << imageData.getStationNameString();
+        qDebug() << "文件保存成功";
+		file.close();
+        return true;
 	}
-	else
+    qDebug() << "文件保存失败";
+    return false;
+}
+
+bool frmComTool::zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files, std::vector<uint8_t>& zip_data)
+{
+	return false;
+}
+
+void frmComTool::on_pushButton_2_clicked()
+{
+	std::string xmlData = ui->textEdit->toPlainText().toStdString();
+
+	// 将十六进制字符串转换为字节数组
+	std::vector<uint8_t> data;
+	data.reserve(xmlData.length() / 2);
+
+	for (size_t i = 0; i < xmlData.length(); i += 2)
 	{
-		qDebug() << "解析图像数据失败！";
+		std::string byteString = xmlData.substr(i, 2);
+		uint8_t byte = static_cast<uint8_t>(std::stoul(byteString, nullptr, 16));
+		data.push_back(byte);
 	}
+	sendData(data);
 
-	// 创建红外图谱数据对象
-	InfraredSpectrumData spectrumData;
-
-	// 解析 detectionFileData
-	if (spectrumData.parseFromBytes(protocol.detectionFileData))
-	{
-		// 解析成功，访问各个字段
-
-		// 1. 基本信息
-		qDebug() << "数据类型编码：" << (int)spectrumData.dataTypeCode;
-		qDebug() << "图谱数据长度：" << spectrumData.dataLength;
-		qDebug() << "生成时间：" << spectrumData.getCreateTimeString();
-		qDebug() << "图谱性质：" << spectrumData.getSpectrumPropertyDescription();
-
-		// 2. 设备信息
-		qDebug() << "设备名称：" << spectrumData.getDeviceNameString();
-		qDebug() << "设备编码：" << spectrumData.getDeviceCodeString();
-		qDebug() << "测点名称：" << spectrumData.getMeasurementPointNameString();
-		qDebug() << "测点编码：" << spectrumData.getMeasurementPointCodeString();
-
-		// 3. 检测参数
-		qDebug() << "检测通道标志：" << spectrumData.detectionChannelFlag;
-		qDebug() << "存储器数据类型：" << (int)spectrumData.storageDataType;
-		qDebug() << "温度单位：" << (int)spectrumData.temperatureUnit;
-
-		// 4. 图像参数
-		qDebug() << "温度矩阵宽度：" << spectrumData.temperatureMatrixWidth;
-		qDebug() << "温度矩阵高度：" << spectrumData.temperatureMatrixHeight;
-
-		// 5. 照片数据长度
-		qDebug() << "可见光照片长度：" << spectrumData.visibleLightDataLength;
-		qDebug() << "红外照片长度：" << spectrumData.infraredPhotoDataLength;
-
-		// 6. 环境参数
-		qDebug() << "辐射率：" << spectrumData.emissivity;
-		qDebug() << "测试距离：" << spectrumData.testDistance << " m";
-		qDebug() << "大气温度：" << spectrumData.atmosphericTemperature << " °C";
-		qDebug() << "相对湿度：" << (int)spectrumData.relativeHumidity << " %";
-		qDebug() << "反射温度：" << spectrumData.reflectedTemperature << " °C";
-
-		// 7. 温宽参数
-		qDebug() << "温宽上限：" << spectrumData.temperatureRangeUpper;
-		qDebug() << "温宽下限：" << spectrumData.temperatureRangeLower;
-
-		// 8. 访问照片数据
-		if (!spectrumData.visibleLightPhotoData.empty())
-		{
-			qDebug() << "可见光照片数据大小：" << spectrumData.visibleLightPhotoData.size() << " 字节";
-			// 可以将 visibleLightPhotoData 保存到文件或显示
-		}
-
-		if (!spectrumData.infraredPhotoData.empty())
-		{
-			qDebug() << "红外照片数据大小：" << spectrumData.infraredPhotoData.size() << " 字节";
-			// 可以将 infraredPhotoData 保存到文件或显示
-		}
-	}
-	else
-	{
-		qDebug() << "解析红外图谱数据失败!";
-	}
+	//将数据保存成dat文件
+	qt_gzip_save_file("D:/test.dat", data);
 }
 
 void frmComTool::on_pushButton_3_clicked()
 {
-	std::string DataConfer = "eb90eb9001000101000000000000003c8000000101000000000000000000000000000000000001000000000000000000000000000000007d0d3e0603";
+	std::string DataConfer ="eb90eb9001000101000000000000003c8000000101000000000000000000000000000000000001000000000000000000000000000000007d0d3e0603";
 	CommunicationProtocol protocol;
 	if (protocol.buildFromHexString(DataConfer))
 	{
@@ -747,6 +835,44 @@ void frmComTool::on_pushButton_3_clicked()
 
 void frmComTool::on_pushButton_4_clicked()
 {
+}
+
+void frmComTool::on_pushButton_5_clicked()
+{
+	std::string filePath = "E:\\GitHub\\Multi-protocol-Data-Terminal\\QtZipWriterAndReader\\unzip_folde1\\1000kV主变测试1_1000kV主变测试_point1_主变1_750kV母线1  本体.dat";
+	std::vector<uint8_t> fileData = qt_gzip_load_file(filePath);
+
+	// 创建 ImageData 对象并解析
+	ImageData imageData;
+
+	if (imageData.parseFromBytes(fileData))
+	{
+		qDebug() << "=== 解析成功 ===";
+
+		// 1. 基本信息
+		qDebug() << "文件长度：" << imageData.fileLength << " 字节";
+		qDebug() << "规范版本号：" << imageData.getVersionString();
+		qDebug() << "生成时间：" << imageData.getCreateTimeString();
+		qDebug() << "站点名称：" << imageData.getStationNameString();
+		qDebug() << "站点代码：" << imageData.getStationCodeString();
+		qDebug() << "仪器型号" << imageData.getInstrumentModelString();
+		qDebug() << "天气" << imageData.getWeatherDescription();
+
+		for (int i = 0; i < imageData.spectrumCount; i++)
+		{
+			InfraredSpectrumData infraredSpectrumData;
+			if (infraredSpectrumData.parseFromBytes(imageData.spectrumData[i]))
+			{
+				qDebug() << "数据长度：" << infraredSpectrumData.dataLength;
+				qDebug() << "数据类型：" << infraredSpectrumData.dataTypeCode;
+				qDebug() << "生成时间：" << infraredSpectrumData.getCreateTimeString();
+			}
+		}
+	}
+	else
+	{
+		qDebug() << "解析图像数据失败！";
+	}
 }
 
 QString frmComTool::getPacketTypeName(uint32_t packetTypeCode)
