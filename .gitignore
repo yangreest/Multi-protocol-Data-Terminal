@@ -11,3 +11,10 @@
 /comtool/Output
 /comtool/debug
 /comtool/release
+/zip_test
+/x64/Release
+/QtZipWriterAndReader
+/comtool/vc140.pdb
+/bin/detection_file.zip
+/bin/detection_file1.zip
+/bin/comtool.pdb
