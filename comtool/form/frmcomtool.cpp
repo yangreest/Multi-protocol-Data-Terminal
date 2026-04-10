@@ -13,13 +13,38 @@ frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool
 	this->initForm();
 	this->initConfig();
 	openSerialPort();
-
+	initTreeWidget();
 	QtHelper::setFormInCenter(this);
 }
 
 void frmComTool::initTreeWidget()
 {
-	ui->treeWidget->setHeaderLabel("检测任务结构");
+	imageitem = nullptr;
+	infraredspectrumitem = nullptr;
+	// 连接信号槽
+	bool isConnected = connect(ui->treeWidget, &QTreeWidget::itemClicked,
+		this, &frmComTool::onTreeItemClicked);
+	qDebug() << "Connection successful:" << isConnected;
+
+	// 自动调整列宽
+	ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+	ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+
+	ui->treeWidget_2->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+	ui->treeWidget_2->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+
+	//间隔颜色显示
+	ui->treeWidget->setAlternatingRowColors(true);
+    ui->treeWidget_2->setAlternatingRowColors(true);
+	// 设置行高
+    ui->treeWidget_2->setStyleSheet("QTreeWidget::item { height: 25px; }");
+
+	addTreeConmunicationItem();
+
+	//QTreeWidgetItem*  = findItemByName("检测数据文件");
+	if (imageitem)
+		addTreeItemImageData(imageitem);
+
 }
 
 void frmComTool::parseXmlToTree(const QString& xmlData)
@@ -179,20 +204,20 @@ void frmComTool::processReceivedData()
 
 	while (!m_receiveQueue->isReceiveQueueEmpty()) {
 		QByteArray data = m_receiveQueue->dequeueReceivedData();
-		if (!data.isEmpty()) 
+		if (!data.isEmpty())
 		{
 			CommunicationProtocol protocol;
 			// 从QByteArray 到std::vector<uint8_t>
-            std::vector<uint8_t> dataVector(data.begin(), data.end());
-          
-            if (protocol.buildFromBytes(dataVector))
-            { 
+			std::vector<uint8_t> dataVector(data.begin(), data.end());
+
+			if (protocol.buildFromBytes(dataVector))
+			{
 				if (protocol.packetTypeCode == 0x00000001)
 				{
 					parseXmlToTree(formatXmlString(protocol.getServiceDataString()));
 				}
 
-            }
+			}
 			else
 			{
 				qDebug() << "CommunicationProtocol::buildFromBytes() failed";
@@ -236,6 +261,189 @@ void frmComTool::closeSerialPort()
 		m_serialWorker->deleteLater();
 		m_serialWorker = nullptr;
 	}
+}
+
+int frmComTool::getTreeItemLevel(QTreeWidgetItem* item)
+{
+	int level = 0;
+	// 循环往上找父节点，有一个父节点就层级+1
+	while (item->parent() != nullptr) {
+		level++;
+		item = item->parent();
+	}
+	return level;
+}
+
+void frmComTool::addTreeConmunicationItem()
+{
+	// 1 报文头
+	QTreeWidgetItem* item1 = new QTreeWidgetItem(ui->treeWidget_2);
+	item1->setText(0, "报文头");
+	item1->setText(1, "uint32_t (4字节)");
+
+	// 2 版本号
+	QTreeWidgetItem* item2 = new QTreeWidgetItem(ui->treeWidget_2);
+	item2->setText(0, "版本号");
+	item2->setText(1, "uint8_t (1字节)");
+
+	// 3 序号
+	QTreeWidgetItem* item3 = new QTreeWidgetItem(ui->treeWidget_2);
+	item3->setText(0, "序号");
+	item3->setText(1, "uint16_t (2字节)");
+
+	// 4 请求标志
+	QTreeWidgetItem* item4 = new QTreeWidgetItem(ui->treeWidget_2);
+	item4->setText(0, "请求标志");
+	item4->setText(1, "uint8_t (1字节)");
+
+	// 5 数据包总长度
+	QTreeWidgetItem* item5 = new QTreeWidgetItem(ui->treeWidget_2);
+	item5->setText(0, "数据包总长度");
+	item5->setText(1, "uint64_t (8字节)");
+
+	// 6 报文类型编码
+	QTreeWidgetItem* item6 = new QTreeWidgetItem(ui->treeWidget_2);
+	item6->setText(0, "报文类型编码");
+	item6->setText(1, "uint32_t (4字节)");
+
+	// 7 压缩标志
+	QTreeWidgetItem* item7 = new QTreeWidgetItem(ui->treeWidget_2);
+	item7->setText(0, "压缩标志");
+	item7->setText(1, "uint8_t (1字节)");
+
+	// 8 加密标志
+	QTreeWidgetItem* item8 = new QTreeWidgetItem(ui->treeWidget_2);
+	item8->setText(0, "加密标志");
+	item8->setText(1, "uint8_t (1字节)");
+
+	// 9 仪器厂商
+	QTreeWidgetItem* item9 = new QTreeWidgetItem(ui->treeWidget_2);
+	item9->setText(0, "仪器厂商");
+	item9->setText(1, "uint8_t (1字节)");
+
+	// 10 备用
+	QTreeWidgetItem* item10 = new QTreeWidgetItem(ui->treeWidget_2);
+	item10->setText(0, "备用");
+	item10->setText(1, "uint8_t[15] (15字节)");
+
+	// 11 业务数据格式
+	QTreeWidgetItem* item11 = new QTreeWidgetItem(ui->treeWidget_2);
+	item11->setText(0, "业务数据格式");
+	item11->setText(1, "uint8_t (1字节)");
+
+	// 12 业务数据长度
+	QTreeWidgetItem* item12 = new QTreeWidgetItem(ui->treeWidget_2);
+	item12->setText(0, "业务数据长度");
+	item12->setText(1, "uint64_t (8字节)");
+
+	// 13 业务数据
+	QTreeWidgetItem* item13 = new QTreeWidgetItem(ui->treeWidget_2);
+	item13->setText(0, "业务数据");
+	item13->setText(1, "uint8_t 数组 (动态)");
+
+	// 14 检测数据文件长度
+	QTreeWidgetItem* item14 = new QTreeWidgetItem(ui->treeWidget_2);
+	item14->setText(0, "检测数据文件长度");
+	item14->setText(1, "uint64_t (8字节)");
+
+	// 15 检测数据文件
+	QTreeWidgetItem* item15 = new QTreeWidgetItem(ui->treeWidget_2);
+	item15->setText(0, "检测数据文件");
+	item15->setText(1, "uint8_t 数组 (动态)");
+	imageitem = item15;
+
+	// 16 校验字节
+	QTreeWidgetItem* item16 = new QTreeWidgetItem(ui->treeWidget_2);
+	item16->setText(0, "校验字节(CRC32)");
+	item16->setText(1, "uint32_t (4字节)");
+
+	// 17 报文尾
+	QTreeWidgetItem* item17 = new QTreeWidgetItem(ui->treeWidget_2);
+	item17->setText(0, "报文尾");
+	item17->setText(1, "uint8_t (1字节)");
+}
+
+void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
+{
+	// 1 文件长度 L
+	addChildItem(parentItem, "文件长度 L", "int32 (4字节)");
+
+	// 2 规范版本号
+	addChildItem(parentItem, "规范版本号", "uint8[4] (4字节)");
+
+	// 3 文件生成时间
+	addChildItem(parentItem, "文件生成时间", "int64 (8字节)");
+
+	// 4 站点名称
+	addChildItem(parentItem, "站点名称", "char[118] (118字节)");
+
+	// 5 站点编码
+	addChildItem(parentItem, "站点编码", "char[42] (42字节)");
+
+	// 6 天气
+	addChildItem(parentItem, "天气", "uint8 (1字节)");
+
+	// 7 温度
+	addChildItem(parentItem, "温度", "float (4字节)");
+
+	// 8 湿度
+	addChildItem(parentItem, "湿度", "uint8 (1字节)");
+
+	// 9 仪器厂家
+	addChildItem(parentItem, "仪器厂家", "char[32] (32字节)");
+
+	// 10 仪器型号
+	addChildItem(parentItem, "仪器型号", "char[32] (32字节)");
+
+	// 11 仪器版本号
+	addChildItem(parentItem, "仪器版本号", "uint8[4] (4字节)");
+
+	// 12 仪器序列号
+	addChildItem(parentItem, "仪器序列号", "char[32] (32字节)");
+
+	// 13 系统频率
+	addChildItem(parentItem, "系统频率", "float (4字节)");
+
+	// 14 图谱数量 N
+	addChildItem(parentItem, "图谱数量 N", "int16 (2字节)");
+
+	// 15 经度
+	addChildItem(parentItem, "经度", "double (8字节)");
+
+	// 16 纬度
+	addChildItem(parentItem, "纬度", "double (8字节)");
+
+	// 17 海拔
+	addChildItem(parentItem, "海拔", "int32 (4字节)");
+
+	// 18 预留
+	addChildItem(parentItem, "预留", "byte[204] (204字节)");
+
+	// 19 图谱数据
+	addChildItem(parentItem, "图谱数据", "动态长度");
+
+	infraredspectrumitem = findItemByName("图谱数据");
+
+	// 20 文件尾部预留
+	addChildItem(parentItem, "文件尾部预留", "byte[32] (32字节)");
+
+	// 21 CRC32
+	addChildItem(parentItem, "CRC32", "int32 (4字节)");
+}
+
+void frmComTool::addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem)
+{
+
+}
+
+
+// 工具函数：添加二级子节点
+void frmComTool::addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type)
+{
+	QTreeWidgetItem* item = new QTreeWidgetItem(parent);
+	item->setText(0, name);
+	item->setText(1, type);
+	item->setExpanded(true);
 }
 
 void frmComTool::onSerialPortOpened()
@@ -653,9 +861,9 @@ void  frmComTool::on_pushButton_clicked()
 		qDebug() << "解析失败";
 	}
 	// 将protocol.detectionFileData 保存成zip文件
-    //qDebug() << "保存检测文件...";
-    //qt_gzip_save_file("detection_file.zip", protocol.detectionFileData);
-    //qDebug() << "检测文件保存成功！";
+	//qDebug() << "保存检测文件...";
+	//qt_gzip_save_file("detection_file.zip", protocol.detectionFileData);
+	//qDebug() << "检测文件保存成功！";
 
 	//// 解压
 	//if (protocol.compressionFlag == 1)
@@ -675,7 +883,7 @@ void  frmComTool::on_pushButton_clicked()
 	//}
 
 	// 从本地文件中读取二进制数据
-	
+
 }
 
 
@@ -768,33 +976,33 @@ void  frmComTool::on_pushButton_clicked()
 
 std::vector<uint8_t> frmComTool::qt_gzip_load_file(std::string filepath)
 {
-    QFile file(filepath.c_str());
-    if (!file.open(QIODevice::ReadOnly))
-    {
-        qDebug() << "无法打开文件" << filepath;
-        return std::vector<uint8_t>();
-    }
+	QFile file(filepath.c_str());
+	if (!file.open(QIODevice::ReadOnly))
+	{
+		qDebug() << "无法打开文件" << filepath;
+		return std::vector<uint8_t>();
+	}
 	QByteArray fileData = file.readAll();
-    return std::vector<uint8_t>(fileData.begin(), fileData.end());
-	
+	return std::vector<uint8_t>(fileData.begin(), fileData.end());
+
 }
 
 bool frmComTool::qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data)
 {
-    QFile file(fileName.c_str());
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        qDebug() << "无法打开文件" << fileName;
-        return false;
-    }
+	QFile file(fileName.c_str());
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		qDebug() << "无法打开文件" << fileName;
+		return false;
+	}
 	if (file.write(QByteArray::fromRawData(reinterpret_cast<const char*>(data.data()), data.size())) == data.size())
 	{
-        qDebug() << "文件保存成功";
+		qDebug() << "文件保存成功";
 		file.close();
-        return true;
+		return true;
 	}
-    qDebug() << "文件保存失败";
-    return false;
+	qDebug() << "文件保存失败";
+	return false;
 }
 
 bool frmComTool::zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files, std::vector<uint8_t>& zip_data)
@@ -824,7 +1032,7 @@ void frmComTool::on_pushButton_2_clicked()
 
 void frmComTool::on_pushButton_3_clicked()
 {
-	std::string DataConfer ="eb90eb9001000101000000000000003c8000000101000000000000000000000000000000000001000000000000000000000000000000007d0d3e0603";
+	std::string DataConfer = "eb90eb9001000101000000000000003c8000000101000000000000000000000000000000000001000000000000000000000000000000007d0d3e0603";
 	CommunicationProtocol protocol;
 	if (protocol.buildFromHexString(DataConfer))
 	{
@@ -835,6 +1043,7 @@ void frmComTool::on_pushButton_3_clicked()
 
 void frmComTool::on_pushButton_4_clicked()
 {
+
 }
 
 void frmComTool::on_pushButton_5_clicked()
@@ -873,6 +1082,18 @@ void frmComTool::on_pushButton_5_clicked()
 	{
 		qDebug() << "解析图像数据失败！";
 	}
+}
+
+QTreeWidgetItem* frmComTool::findItemByName(const QString& name)
+{
+	// 遍历所有一级节点
+	for (int i = 0; i < ui->treeWidget_2->topLevelItemCount(); i++) {
+		QTreeWidgetItem* item = ui->treeWidget_2->topLevelItem(i);
+		if (item->text(0) == name) {
+			return item; // 找到返回
+		}
+	}
+	return nullptr; // 没找到
 }
 
 QString frmComTool::getPacketTypeName(uint32_t packetTypeCode)
@@ -1172,6 +1393,38 @@ void frmComTool::on_pushButton_ReadBattery_clicked()
 void frmComTool::on_btnClear_clicked()
 {
 	append(0, "", true);
+}
+
+void frmComTool::onTreeItemClicked(QTreeWidgetItem* item, int column)
+{
+	if (!item) return;
+
+	QString text = item->text(column);
+	qDebug() << "点击了节点：" << text;
+
+	// 判断当前的节点是树的第几个层级
+	int level = getTreeItemLevel(item);
+	switch (level) {
+	case 0:
+		// 树第一层级
+		qDebug() << "树第一层级";
+		break;
+	case 1:
+		// 树第二层级
+		qDebug() << "树第二层级";
+		break;
+	case 2:
+		// 树第三层级
+		qDebug() << "树第三层级";
+		break;
+	case 3:
+		// 树第四层级
+		qDebug() << "树第四层级";
+		break;
+	default:
+		break;
+	}
+
 }
 
 //void frmComTool::on_btnStart_clicked()

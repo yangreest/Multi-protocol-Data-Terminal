@@ -8,7 +8,7 @@
 #include "serialdataqueue.h"
 #include "serialworker.h"
 #include <QTreeWidget>
-
+#include <QTreeWidgetItem>
 
 //#include "zlib.h"
 //#include "ioapi.h"
@@ -54,6 +54,9 @@ private:
 	//QTcpSocket* socket;         //网络连接对象
 	QTimer* timerConnect;       //定时器重连
 
+	QTreeWidgetItem* imageitem;
+	QTreeWidgetItem* infraredspectrumitem;
+
 private:
 	SerialDataQueue* m_sendQueue;
 	SerialDataQueue* m_receiveQueue;
@@ -78,6 +81,15 @@ private slots:
 	void processReceivedData();
 	void openSerialPort();
 	void closeSerialPort();
+	int getTreeItemLevel(QTreeWidgetItem* item);
+
+	void addTreeConmunicationItem();
+	void addTreeItemImageData(QTreeWidgetItem* parentItem);
+    void addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem);
+	void addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type);
+	// 根据参数名称查找节点（第一列）
+	QTreeWidgetItem* findItemByName(const QString& name);
+	
 
 	QString getPacketTypeName(uint32_t packetTypeCode);
 	QString formatXmlString(const std::string& str);
@@ -115,6 +127,8 @@ private slots:
 	void on_pushButton_5_clicked();
 
 	void on_btnClear_clicked();
+	// 在 private slots: 或 public slots: 区域
+	void onTreeItemClicked(QTreeWidgetItem* item, int column);
 	//void on_btnData_clicked();
 	//void on_btnStart_clicked();
 

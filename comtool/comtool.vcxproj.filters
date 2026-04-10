@@ -80,6 +80,9 @@
     <ClCompile Include="battery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="serial_protocol_parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="api\appconfig.h">
@@ -120,6 +123,9 @@
     </ClInclude>
     <ClInclude Include="ImageData.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="serial_protocol_parser.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

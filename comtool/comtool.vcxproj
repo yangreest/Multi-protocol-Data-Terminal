@@ -213,12 +213,14 @@
     <ClCompile Include="api\qthelperdata.cpp" />
     <ClCompile Include="serialdataqueue.cpp" />
     <ClCompile Include="serialworker.cpp" />
+    <ClCompile Include="serial_protocol_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="api\appconfig.h" />
     <ClInclude Include="api\appdata.h" />
     <ClInclude Include="ImageData.h" />
     <ClInclude Include="InfraredSpectrumData.h" />
+    <ClInclude Include="serial_protocol_parser.h" />
     <QtMoc Include="serialdataqueue.h" />
     <QtMoc Include="serialworker.h" />
     <QtMoc Include="form\frmcomtool.h" />

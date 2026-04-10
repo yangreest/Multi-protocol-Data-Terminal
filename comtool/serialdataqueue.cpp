@@ -27,7 +27,7 @@ void SerialDataQueue::enqueueReceivedData(const QByteArray &data)
     QMutexLocker locker(&mutex);
     
     // 将修改后的数据加入队列
-    receiveQueue.enqueue(data);
+    receiveQueue.enqueue(data); // 添加数据
     dataAvailable.wakeAll(); // 唤醒等待的线程
 }
 
@@ -36,7 +36,7 @@ QByteArray SerialDataQueue::dequeueReceivedData()
     QMutexLocker locker(&mutex);
     if (receiveQueue.isEmpty())
         return QByteArray();
-    return receiveQueue.dequeue();
+    return receiveQueue.dequeue(); // 获取并移除队列的第一个元素
 }
 
 bool SerialDataQueue::isSendQueueEmpty() const
