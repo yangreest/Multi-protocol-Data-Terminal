@@ -19,8 +19,8 @@ frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool
 
 void frmComTool::initTreeWidget()
 {
-	imageitem = nullptr;
-	infraredspectrumitem = nullptr;
+	imageItem = nullptr;
+	infraredSpectrumItem = nullptr;
 	// 连接信号槽
 	bool isConnected = connect(ui->treeWidget, &QTreeWidget::itemClicked,
 		this, &frmComTool::onTreeItemClicked);
@@ -35,15 +35,15 @@ void frmComTool::initTreeWidget()
 
 	//间隔颜色显示
 	ui->treeWidget->setAlternatingRowColors(true);
-    ui->treeWidget_2->setAlternatingRowColors(true);
+	ui->treeWidget_2->setAlternatingRowColors(true);
 	// 设置行高
-    ui->treeWidget_2->setStyleSheet("QTreeWidget::item { height: 25px; }");
+	ui->treeWidget_2->setStyleSheet("QTreeWidget::item { height: 25px; }");
 
 	addTreeConmunicationItem();
 
 	//QTreeWidgetItem*  = findItemByName("检测数据文件");
-	if (imageitem)
-		addTreeItemImageData(imageitem);
+	if (imageItem)
+		addTreeItemImageData(imageItem);
 
 }
 
@@ -133,16 +133,16 @@ void frmComTool::initForm()
 	//connect(timerRead, SIGNAL(timeout()), this, SLOT(readData()));
 
 	//发送数据
-	timerSend = new QTimer(this);
-	connect(timerSend, SIGNAL(timeout()), this, SLOT(sendData()));
+	//timerSend = new QTimer(this);
+	//connect(timerSend, SIGNAL(timeout()), this, SLOT(sendData()));
 	//connect(ui->btnSend, SIGNAL(clicked()), this, SLOT(sendData()));
 
-	timerReLoad = new QTimer(this);
-	connect(timerReLoad, SIGNAL(timeout()), this, SLOT(reLoad()));
+	//timerReLoad = new QTimer(this);
+	//connect(timerReLoad, SIGNAL(timeout()), this, SLOT(reLoad()));
 
 	//保存数据
-	timerSave = new QTimer(this);
-	connect(timerSave, SIGNAL(timeout()), this, SLOT(saveData()));
+	//timerSave = new QTimer(this);
+	//connect(timerSave, SIGNAL(timeout()), this, SLOT(saveData()));
 	//connect(ui->btnSave, SIGNAL(clicked()), this, SLOT(saveData()));
 
 	//ui->tabWidget->setCurrentIndex(0);
@@ -155,6 +155,10 @@ void frmComTool::initForm()
 	//ui->widget_2->setVisible(false);
 	//ui->widget->setVisible(false);
 	//ui->frameTop->setVisible(false);
+
+	// 绑定组包完成信号
+	parser = new SerialProtocolParser();
+	parser->connect_packet_assembled(std::bind(&frmComTool::packed_data_received, this, std::placeholders::_1));
 
 }
 
@@ -206,23 +210,8 @@ void frmComTool::processReceivedData()
 		QByteArray data = m_receiveQueue->dequeueReceivedData();
 		if (!data.isEmpty())
 		{
-			CommunicationProtocol protocol;
-			// 从QByteArray 到std::vector<uint8_t>
 			std::vector<uint8_t> dataVector(data.begin(), data.end());
-
-			if (protocol.buildFromBytes(dataVector))
-			{
-				if (protocol.packetTypeCode == 0x00000001)
-				{
-					parseXmlToTree(formatXmlString(protocol.getServiceDataString()));
-				}
-
-			}
-			else
-			{
-				qDebug() << "CommunicationProtocol::buildFromBytes() failed";
-			}
-
+			parser->parse_serial_data(dataVector);
 		}
 	}
 }
@@ -350,7 +339,7 @@ void frmComTool::addTreeConmunicationItem()
 	QTreeWidgetItem* item15 = new QTreeWidgetItem(ui->treeWidget_2);
 	item15->setText(0, "检测数据文件");
 	item15->setText(1, "uint8_t 数组 (动态)");
-	imageitem = item15;
+	imageItem = item15;
 
 	// 16 校验字节
 	QTreeWidgetItem* item16 = new QTreeWidgetItem(ui->treeWidget_2);
@@ -422,7 +411,7 @@ void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
 	// 19 图谱数据
 	addChildItem(parentItem, "图谱数据", "动态长度");
 
-	infraredspectrumitem = findItemByName("图谱数据");
+	infraredSpectrumItem = findItemByName("图谱数据");
 
 	// 20 文件尾部预留
 	addChildItem(parentItem, "文件尾部预留", "byte[32] (32字节)");
@@ -551,16 +540,16 @@ void frmComTool::initConfig()
 	//ui->cboxSaveInterval->setCurrentIndex(ui->cboxSaveInterval->findText(QString::number(AppConfig::SaveInterval)));
 	//connect(ui->cboxSaveInterval, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
 
-	timerSend->setInterval(AppConfig::SendInterval);
-	timerSave->setInterval(AppConfig::SaveInterval);
+	//timerSend->setInterval(AppConfig::SendInterval);
+	//timerSave->setInterval(AppConfig::SaveInterval);
 
-	if (AppConfig::AutoSend) {
-		timerSend->start();
-	}
+	//if (AppConfig::AutoSend) {
+	//	timerSend->start();
+	//}
 
-	if (AppConfig::AutoSave) {
-		timerSave->start();
-	}
+	//if (AppConfig::AutoSave) {
+	//	timerSave->start();
+	//}
 
 	//串口转网络部分
 	//ui->cboxMode->setCurrentIndex(ui->cboxMode->findText(AppConfig::Mode));
@@ -1004,6 +993,31 @@ bool frmComTool::qt_gzip_save_file(const std::string& fileName, const std::vecto
 	qDebug() << "文件保存失败";
 	return false;
 }
+// qt_gzip_save_file 可以向文件中追加数据
+bool frmComTool::qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data, bool append)
+{
+	if (append)
+	{
+		QFile file(fileName.c_str());
+		if (!file.open(QIODevice::Append))
+		{
+			qDebug() << "无法打开文件" << fileName;
+			return false;
+		}
+		if (file.write(QByteArray::fromRawData(reinterpret_cast<const char*>(data.data()), data.size())) == data.size())
+		{
+			qDebug() << "文件保存成功";
+			file.close();
+			return true;
+		}
+		qDebug() << "文件保存失败";
+		return false;
+	}
+	else
+	{
+		return qt_gzip_save_file(fileName, data);
+	}
+}
 
 bool frmComTool::zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files, std::vector<uint8_t>& zip_data)
 {
@@ -1024,10 +1038,20 @@ void frmComTool::on_pushButton_2_clicked()
 		uint8_t byte = static_cast<uint8_t>(std::stoul(byteString, nullptr, 16));
 		data.push_back(byte);
 	}
-	sendData(data);
 
-	//将数据保存成dat文件
-	qt_gzip_save_file("D:/test.dat", data);
+	std::vector<std::vector<uint8_t>> dataList = parser->split_long_data(data, 250);
+
+	for (auto item : dataList)
+	{
+		sendData(item);
+		//将数据保存成dat文件
+		qt_gzip_save_file("D:/test.dat", item, true);
+	}
+	qt_gzip_save_file("D:/test1.dat", data);
+
+
+
+
 }
 
 void frmComTool::on_pushButton_3_clicked()
@@ -1036,8 +1060,12 @@ void frmComTool::on_pushButton_3_clicked()
 	CommunicationProtocol protocol;
 	if (protocol.buildFromHexString(DataConfer))
 	{
-		qDebug() << "✓ 获取标准XML数据成功";
-		sendData(protocol.toBytes());
+		std::vector<std::vector<uint8_t>> mSendData = parser->split_long_data(protocol.toBytes(), 250);
+		for (auto item : mSendData)
+		{
+			sendData(item);
+			qDebug() << "发送数据成功"<< item.size();
+		}
 	}
 }
 
@@ -1094,6 +1122,25 @@ QTreeWidgetItem* frmComTool::findItemByName(const QString& name)
 		}
 	}
 	return nullptr; // 没找到
+}
+
+void frmComTool::packed_data_received(const std::vector<uint8_t>& data)
+{
+	qDebug() << "收到数据包：" << QByteArray::fromRawData(reinterpret_cast<const char*>(data.data()), data.size()).toHex();
+
+	CommunicationProtocol protocol;
+
+	if (protocol.buildFromBytes(data))
+	{
+		if (protocol.packetTypeCode == 0x00000001)
+		{
+			parseXmlToTree(formatXmlString(protocol.getServiceDataString()));
+		}
+	}
+	else
+	{
+		qDebug() << "CommunicationProtocol::buildFromBytes() failed";
+	}
 }
 
 QString frmComTool::getPacketTypeName(uint32_t packetTypeCode)
@@ -1168,7 +1215,7 @@ void frmComTool::sendData()
 	}
 	else if (m_state == 4)
 	{
-		timerSend->setInterval(AppConfig::SendInterval);
+		//timerSend->setInterval(AppConfig::SendInterval);
 		m_state = 0;
 	}
 
@@ -1250,14 +1297,14 @@ void frmComTool::saveData()
 
 void frmComTool::reLoad()
 {
-	if (reloadtimes > 0) {
-		timerReLoad->start(1000);
+	if (reLoadTimes > 0) {
+		//timerReLoad->start(1000);
 		//ui->pushButton_SetTrigger_2->setText(QString("充电中..%1s").arg(reloadtimes));
-		reloadtimes--;
+		reLoadTimes--;
 		return;
 	}
-	reloadtimes = 10;
-	timerReLoad->stop();
+	reLoadTimes = 10;
+	//timerReLoad->stop();
 	//ui->pushButton_SetTrigger_2->setEnabled(true);
 	//ui->pushButton_SetTrigger_2->setText("");
 }
@@ -1337,9 +1384,9 @@ void frmComTool::on_pushButton_SetTrigger_2_clicked()
 
 	//	ui->pushButton_SetTrigger_2->setEnabled(false);
 		//ui->pushButton_SetTrigger_2->setText("充电中。。");
-	timerReLoad->start(1000);
+	//timerReLoad->start(1000);
 	m_state = 1;
-	timerSend->setInterval(1000);
+	//timerSend->setInterval(1000);
 	sendData(Modbus::Modbus_Set_Trigger(0x55));
 }
 void frmComTool::on_pushButton_ReadState_clicked()
@@ -1455,11 +1502,11 @@ void frmComTool::on_ckAutoSend_stateChanged(int arg1)
 {
 	if (arg1 == 0) {
 		//	ui->cboxSendInterval->setEnabled(false);
-		timerSend->stop();
+		//timerSend->stop();
 	}
 	else {
 		//	ui->cboxSendInterval->setEnabled(true);
-		timerSend->start();
+		//timerSend->start();
 	}
 }
 
@@ -1467,10 +1514,10 @@ void frmComTool::on_ckAutoSave_stateChanged(int arg1)
 {
 	if (arg1 == 0) {
 		//ui->cboxSaveInterval->setEnabled(false);
-		timerSave->stop();
+		//timerSave->stop();
 	}
 	else {
 		//ui->cboxSaveInterval->setEnabled(true);
-		timerSave->start();
+		//timerSave->start();
 	}
 }

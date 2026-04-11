@@ -9,6 +9,8 @@
 #include "serialworker.h"
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include "serial_protocol_parser.h"
+#include <functional>
 
 //#include "zlib.h"
 //#include "ioapi.h"
@@ -38,10 +40,10 @@ private:
 	//bool comOk;                 //串口是否打开
 	//QextSerialPort* com;        //串口通信对象
 	//QTimer* timerRead;          //定时读取串口数据
-	QTimer* timerSend;          //定时发送串口数据
-	QTimer* timerSave;          //定时保存串口数据
-	QTimer* timerReLoad;		//重新上电；
-	int reloadtimes = 10;		// 重连次数
+	//QTimer* timerSend;          //定时发送串口数据
+	//QTimer* timerSave;          //定时保存串口数据
+	//QTimer* timerReLoad;		//重新上电；
+	int reLoadTimes = 10;		// 重连次数
 	// 业务状态
 	int m_state = 0;   // 0正常待机状态 ，1：进入检测完成状态，2：进入待机状态 ，3：进入结果状态 
 
@@ -54,8 +56,10 @@ private:
 	//QTcpSocket* socket;         //网络连接对象
 	QTimer* timerConnect;       //定时器重连
 
-	QTreeWidgetItem* imageitem;
-	QTreeWidgetItem* infraredspectrumitem;
+	SerialProtocolParser* parser;
+
+	QTreeWidgetItem* imageItem;
+	QTreeWidgetItem* infraredSpectrumItem;
 
 private:
 	SerialDataQueue* m_sendQueue;
@@ -89,6 +93,8 @@ private slots:
 	void addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type);
 	// 根据参数名称查找节点（第一列）
 	QTreeWidgetItem* findItemByName(const QString& name);
+
+	void packed_data_received(const std::vector<uint8_t>& data);
 	
 
 	QString getPacketTypeName(uint32_t packetTypeCode);
@@ -97,6 +103,7 @@ private slots:
 	//std::vector<uint8_t> qt_gzip_compress(std::vector<uint8_t> gzipData);
 	std::vector<uint8_t> qt_gzip_load_file(std::string filepath);
 	bool  qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data);
+	bool  qt_gzip_save_file(const std::string& fileName, const std::vector<uint8_t>& data,bool append);
 	bool zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files, std::vector<uint8_t>& zip_data);
 
 private slots:

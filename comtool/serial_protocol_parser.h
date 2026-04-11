@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
+#include <functional>
 
 // 协议常量定义（对外可见）
 const uint8_t PACKET_HEADER = 0xA5;    // 包头
@@ -24,6 +25,10 @@ private:
     std::unordered_map<uint32_t, MultiPacketCache> multi_packet_cache; // 多包缓存
     std::vector<uint8_t> receive_buffer; // 串口接收缓冲区
 
+    // 信号回调函数类型定义
+    std::function<void(const std::vector<uint8_t>&)> packet_assembled_callback_;
+
+
     // 单包合法性校验（内部方法）
     bool validate_single_packet(const std::vector<uint8_t>& packet);
     // 提取单包有效数据（内部方法）
@@ -34,8 +39,21 @@ public:
     // 返回值：拼接完成的完整数据（响应包返回0/1，透传包返回拼接后的原始数据）
     std::vector<uint8_t> parse_serial_data(const std::vector<uint8_t>& new_data);
 
+    // 对长数据进行分片处理（内部方法）
+    std::vector<std::vector<uint8_t>> split_long_data(const std::vector<uint8_t>& long_data, int chunk_size);
+
     // 清空缓冲区和缓存（对外接口）
     void clear();
+
+    // 添加信号连接方法
+    void connect_packet_assembled(const std::function<void(const std::vector<uint8_t>&)> callback) {
+        packet_assembled_callback_ = callback;
+    }
+
+    // 断开信号连接
+    void disconnect_packet_assembled() {
+        packet_assembled_callback_ = nullptr;
+    }
 
     // 析构函数
     ~SerialProtocolParser() = default;
