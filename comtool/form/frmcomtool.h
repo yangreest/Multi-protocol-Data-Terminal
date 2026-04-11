@@ -12,10 +12,6 @@
 #include "serial_protocol_parser.h"
 #include <functional>
 
-//#include "zlib.h"
-//#include "ioapi.h"
-//#include "zip.h"
-//#include "unzip.h"
 
 namespace Ui
 {
@@ -58,9 +54,9 @@ private:
 
 	SerialProtocolParser* parser;
 
+	QTreeWidgetItem* fileItem;
 	QTreeWidgetItem* imageItem;
-	QTreeWidgetItem* infraredSpectrumItem;
-
+	QTreeWidgetItem* mCurrentItem;
 private:
 	SerialDataQueue* m_sendQueue;
 	SerialDataQueue* m_receiveQueue;
@@ -69,17 +65,14 @@ private slots:
 	void initForm();            //初始化窗体数据
 	void initConfig();          //初始化配置文件
 	void saveConfig();          //保存配置文件
-	void readData();            //读取串口数据
 	void readData(uint8_t type);            //读取串口数据
 	void sendData();            //发送串口数据
-	void sendData(QString data);//发送串口数据带参数
 	void sendData(std::vector<uint8_t> data);
 	void sendData(const QByteArray& data);
-	void saveData();            //保存串口数据
 	void reLoad();
 
 	void changeEnable(bool b);  //改变状态
-	void append(int type, const QString& data, bool clear = false);
+	//void append(int type, const QString& data, bool clear = false);
 
 	QStringList enumerateSerialPorts();
 	void processReceivedData();
@@ -113,34 +106,18 @@ private slots:
 
 private slots:
 	void on_btnOpen_clicked();
-	//void on_btnStopShow_clicked();
 	void on_cboxPortName_clicked(int nindex);
-	void on_btnSendCount_clicked();
 	void on_btnReceiveCount_clicked();
-
-	void on_pushButton_ReadStation_clicked();
-	void on_pushButton_ReadBT_clicked();
-	void on_pushButton_ReadTrigger_clicked();
-	void on_pushButton_SetTrigger_clicked();
-	void on_pushButton_SetTrigger_2_clicked();
-	void on_pushButton_ReadState_clicked();
-	void on_pushButton_ReadResult_clicked();
-	void on_pushButton_ReadBattery_clicked();
 
 	void on_pushButton_clicked();
 	void on_pushButton_3_clicked();
 	void on_pushButton_2_clicked();
 	void on_pushButton_4_clicked();
 	void on_pushButton_5_clicked();
+	void on_pushButton_6_clicked(); // 插入图片
 
-	void on_btnClear_clicked();
-	// 在 private slots: 或 public slots: 区域
 	void onTreeItemClicked(QTreeWidgetItem* item, int column);
-	//void on_btnData_clicked();
-	//void on_btnStart_clicked();
-
-	void on_ckAutoSend_stateChanged(int arg1);
-	void on_ckAutoSave_stateChanged(int arg1);
+	
 };
 
 #endif // FRMCOMTOOL_H

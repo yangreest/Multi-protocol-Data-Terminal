@@ -17,7 +17,6 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QListView>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
@@ -63,9 +62,9 @@ public:
     QWidget *page;
     QVBoxLayout *verticalLayout_4;
     QTreeWidget *treeWidget;
-    QListView *listView;
     QHBoxLayout *horizontalLayout_3;
     QPushButton *pushButton_3;
+    QPushButton *pushButton_6;
     QPushButton *pushButton_4;
     QTreeWidget *treeWidget_2;
 
@@ -237,11 +236,6 @@ public:
 
         verticalLayout_4->addWidget(treeWidget);
 
-        listView = new QListView(page);
-        listView->setObjectName("listView");
-
-        verticalLayout_4->addWidget(listView);
-
         toolBox_2->addItem(page, QString::fromUtf8("\344\273\273\345\212\241\345\210\227\350\241\250"));
 
         verticalLayout->addWidget(toolBox_2);
@@ -253,6 +247,11 @@ public:
         pushButton_3->setObjectName("pushButton_3");
 
         horizontalLayout_3->addWidget(pushButton_3);
+
+        pushButton_6 = new QPushButton(frmComTool);
+        pushButton_6->setObjectName("pushButton_6");
+
+        horizontalLayout_3->addWidget(pushButton_6);
 
         pushButton_4 = new QPushButton(frmComTool);
         pushButton_4->setObjectName("pushButton_4");
@@ -295,6 +294,7 @@ public:
         toolBox_2->setItemText(toolBox_2->indexOf(page_4), QCoreApplication::translate("frmComTool", "\350\260\203\350\257\225\347\225\214\351\235\242", nullptr));
         toolBox_2->setItemText(toolBox_2->indexOf(page), QCoreApplication::translate("frmComTool", "\344\273\273\345\212\241\345\210\227\350\241\250", nullptr));
         pushButton_3->setText(QCoreApplication::translate("frmComTool", "(\345\217\221\351\200\201)\344\273\273\345\212\241\347\241\256\350\256\244", nullptr));
+        pushButton_6->setText(QCoreApplication::translate("frmComTool", "\346\217\222\345\205\245\345\233\276\347\211\207", nullptr));
         pushButton_4->setText(QCoreApplication::translate("frmComTool", "(\345\217\221\351\200\201)\346\225\260\346\215\256\346\226\207\344\273\266", nullptr));
         QTreeWidgetItem *___qtreewidgetitem = treeWidget_2->headerItem();
         ___qtreewidgetitem->setText(2, QCoreApplication::translate("frmComTool", "\346\225\260\345\200\274", nullptr));

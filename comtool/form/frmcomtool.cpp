@@ -19,8 +19,9 @@ frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool
 
 void frmComTool::initTreeWidget()
 {
+	fileItem = nullptr;
 	imageItem = nullptr;
-	infraredSpectrumItem = nullptr;
+	mCurrentItem = nullptr;
 	// 连接信号槽
 	bool isConnected = connect(ui->treeWidget, &QTreeWidget::itemClicked,
 		this, &frmComTool::onTreeItemClicked);
@@ -42,8 +43,8 @@ void frmComTool::initTreeWidget()
 	addTreeConmunicationItem();
 
 	//QTreeWidgetItem*  = findItemByName("检测数据文件");
-	if (imageItem)
-		addTreeItemImageData(imageItem);
+	//if (imageItem)
+		//addTreeItemImageData(imageItem);
 
 }
 
@@ -51,6 +52,8 @@ void frmComTool::parseXmlToTree(const QString& xmlData)
 {
 	QXmlStreamReader reader(xmlData);
 	QTreeWidgetItem* currentParent = nullptr;
+
+	int ntestpointcount = 0;
 
 	// 逐行解析XML
 	while (!reader.atEnd()) {
@@ -60,7 +63,7 @@ void frmComTool::parseXmlToTree(const QString& xmlData)
 				QString name = reader.attributes().value("name").toString();
 				currentParent = new QTreeWidgetItem(ui->treeWidget);
 				currentParent->setText(0, name);
-				currentParent->setExpanded(true);
+				currentParent->setExpanded(true); // 
 			}
 			// 解析子任务
 			else if (reader.name() == "sub_task") {
@@ -78,6 +81,34 @@ void frmComTool::parseXmlToTree(const QString& xmlData)
 			else if (reader.name() == "test_point") {
 				QString name = reader.attributes().value("name").toString();
 				addTreeNode(currentParent, name);
+				if (ntestpointcount == 0)
+				{
+					fileItem->setText(0, name);
+					addTreeItemImageData(fileItem);
+				}
+				else
+				{
+					// 增加节点
+					QTreeWidgetItem* targetItem = fileItem;
+					QTreeWidgetItem* newItem = new QTreeWidgetItem();
+					newItem->setText(0, name);
+					if (QTreeWidgetItem* parent = targetItem->parent()) {
+						// 获取目标节点在父节点里的索引
+						int index = parent->indexOfChild(targetItem) + 1;
+						// 插到它前面
+						parent->insertChild(index, newItem);
+					}
+					else {
+						// 顶层节点
+						int index = ui->treeWidget_2->indexOfTopLevelItem(targetItem) + 1;
+						// 获取目标节点的名称
+						ui->treeWidget_2->insertTopLevelItem(index, newItem);
+					}
+					fileItem = newItem;
+					addTreeItemImageData(fileItem);
+				}
+
+				ntestpointcount++;
 			}
 		}
 	}
@@ -124,37 +155,7 @@ void frmComTool::initForm()
 	connect(receiveTimer, &QTimer::timeout, this, &frmComTool::processReceivedData);
 	receiveTimer->start(50); // 每50ms检查一次接收数据
 
-	//ui->cboxSendInterval->addItems(AppData::Intervals);
-	//ui->cboxData->addItems(AppData::Datas);
-
-	//读取数据
-	//timerRead = new QTimer(this);
-	//timerRead->setInterval(100);
-	//connect(timerRead, SIGNAL(timeout()), this, SLOT(readData()));
-
-	//发送数据
-	//timerSend = new QTimer(this);
-	//connect(timerSend, SIGNAL(timeout()), this, SLOT(sendData()));
-	//connect(ui->btnSend, SIGNAL(clicked()), this, SLOT(sendData()));
-
-	//timerReLoad = new QTimer(this);
-	//connect(timerReLoad, SIGNAL(timeout()), this, SLOT(reLoad()));
-
-	//保存数据
-	//timerSave = new QTimer(this);
-	//connect(timerSave, SIGNAL(timeout()), this, SLOT(saveData()));
-	//connect(ui->btnSave, SIGNAL(clicked()), this, SLOT(saveData()));
-
-	//ui->tabWidget->setCurrentIndex(0);
 	changeEnable(false);
-	//ui->stackedWidget->setCurrentIndex(1);
-
-	//ui->pushButton_SetTrigger_2->setEnabled(false);
-	//ui->txtMain->setVisible(false);
-	//ui->widgetRight->setVisible(false);
-	//ui->widget_2->setVisible(false);
-	//ui->widget->setVisible(false);
-	//ui->frameTop->setVisible(false);
 
 	// 绑定组包完成信号
 	parser = new SerialProtocolParser();
@@ -169,7 +170,7 @@ QStringList frmComTool::enumerateSerialPorts()
 
 #ifdef Q_OS_WIN
 	// Windows下通过查询注册表或试探法获取串口列表
-	for (int i = 1; i <= 10; i++) {
+	for (int i = 1; i <= 100; i++) {
 		QString portName = QString("COM%1").arg(i);
 		QextSerialPort port(portName, QextSerialPort::Polling);
 		// 尝试打开端口来检测是否存在
@@ -339,7 +340,7 @@ void frmComTool::addTreeConmunicationItem()
 	QTreeWidgetItem* item15 = new QTreeWidgetItem(ui->treeWidget_2);
 	item15->setText(0, "检测数据文件");
 	item15->setText(1, "uint8_t 数组 (动态)");
-	imageItem = item15;
+	fileItem = item15;
 
 	// 16 校验字节
 	QTreeWidgetItem* item16 = new QTreeWidgetItem(ui->treeWidget_2);
@@ -411,7 +412,7 @@ void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
 	// 19 图谱数据
 	addChildItem(parentItem, "图谱数据", "动态长度");
 
-	infraredSpectrumItem = findItemByName("图谱数据");
+	imageItem = findItemByName("图谱数据");
 
 	// 20 文件尾部预留
 	addChildItem(parentItem, "文件尾部预留", "byte[32] (32字节)");
@@ -438,25 +439,18 @@ void frmComTool::addChildItem(QTreeWidgetItem* parent, const QString& name, cons
 void frmComTool::onSerialPortOpened()
 {
 	changeEnable(true);
-	append(0, QString("串口已打开"));
 	ui->btnOpen->setText("关闭串口");
-	//ui->labelComState->setText("已连接");
-	//ui->pushButton_SetTrigger_2->setEnabled(true);
 	sendData(Modbus::Modbus_Read_Power());
 }
 
 void frmComTool::onSerialPortClosed()
 {
 	changeEnable(false);
-	append(0, QString("串口已关闭"));
-	//ui->labelComState->setText("未连接");
-	//ui->pushButton_SetTrigger_2->setEnabled(false);
 	ui->btnOpen->setText("打开串口");
 }
 
 void frmComTool::onSerialError(const QString& error)
 {
-	append(6, error);
 }
 
 void frmComTool::initConfig()
@@ -504,80 +498,6 @@ void frmComTool::initConfig()
 	ui->cboxStopBit->addItems(stopBitsList);
 	ui->cboxStopBit->setCurrentIndex(ui->cboxStopBit->findText(QString::number(AppConfig::StopBit)));
 	connect(ui->cboxStopBit, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckHexSend->setChecked(AppConfig::HexSend);
-	//connect(ui->ckHexSend, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckHexReceive->setChecked(AppConfig::HexReceive);
-	//connect(ui->ckHexReceive, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckDebug->setChecked(AppConfig::Debug);
-	//connect(ui->ckDebug, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckAutoClear->setChecked(AppConfig::AutoClear);
-	//connect(ui->ckAutoClear, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckAutoSend->setChecked(AppConfig::AutoSend);
-	//connect(ui->ckAutoSend, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckAutoSave->setChecked(AppConfig::AutoSave);
-	//connect(ui->ckAutoSave, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
-
-	QStringList sendInterval;
-	QStringList saveInterval;
-	sendInterval << "100" << "300" << "500";
-
-	for (int i = 1000; i <= 10000; i = i + 1000) {
-		sendInterval << QString::number(i);
-		saveInterval << QString::number(i);
-	}
-
-	//ui->cboxSendInterval->addItems(sendInterval);
-	//ui->cboxSaveInterval->addItems(saveInterval);
-
-	//ui->cboxSendInterval->setCurrentIndex(ui->cboxSendInterval->findText(QString::number(AppConfig::SendInterval)));
-	//connect(ui->cboxSendInterval, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
-	//ui->cboxSaveInterval->setCurrentIndex(ui->cboxSaveInterval->findText(QString::number(AppConfig::SaveInterval)));
-	//connect(ui->cboxSaveInterval, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
-
-	//timerSend->setInterval(AppConfig::SendInterval);
-	//timerSave->setInterval(AppConfig::SaveInterval);
-
-	//if (AppConfig::AutoSend) {
-	//	timerSend->start();
-	//}
-
-	//if (AppConfig::AutoSave) {
-	//	timerSave->start();
-	//}
-
-	//串口转网络部分
-	//ui->cboxMode->setCurrentIndex(ui->cboxMode->findText(AppConfig::Mode));
-	//connect(ui->cboxMode, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->txtServerIP->setText(AppConfig::ServerIP);
-	//connect(ui->txtServerIP, SIGNAL(textChanged(QString)), this, SLOT(saveConfig()));
-
-	//ui->txtServerPort->setText(QString::number(AppConfig::ServerPort));
-	//connect(ui->txtServerPort, SIGNAL(textChanged(QString)), this, SLOT(saveConfig()));
-
-	//ui->txtListenPort->setText(QString::number(AppConfig::ListenPort));
-	//connect(ui->txtListenPort, SIGNAL(textChanged(QString)), this, SLOT(saveConfig()));
-
-	//QStringList values;
-	//values << "0" << "10" << "50";
-
-	//for (int i = 100; i < 1000; i = i + 100) {
-	//    values << QString("%1").arg(i);
-	//}
-
-	//ui->cboxSleepTime->addItems(values);
-
-	//ui->cboxSleepTime->setCurrentIndex(ui->cboxSleepTime->findText(QString::number(AppConfig::SleepTime)));
-	//connect(ui->cboxSleepTime, SIGNAL(currentIndexChanged(int)), this, SLOT(saveConfig()));
-
-	//ui->ckAutoConnect->setChecked(AppConfig::AutoConnect);
-	//connect(ui->ckAutoConnect, SIGNAL(stateChanged(int)), this, SLOT(saveConfig()));
 }
 
 
@@ -610,33 +530,6 @@ void frmComTool::saveConfig()
 	AppConfig::Parity = ui->cboxParity->currentText();
 	AppConfig::StopBit = ui->cboxStopBit->currentText().toDouble();
 
-	//AppConfig::HexSend = ui->ckHexSend->isChecked();
-	//AppConfig::HexReceive = ui->ckHexReceive->isChecked();
-	//AppConfig::Debug = ui->ckDebug->isChecked();
-	//AppConfig::AutoClear = ui->ckAutoClear->isChecked();
-
-	//AppConfig::AutoSend = ui->ckAutoSend->isChecked();
-	//AppConfig::AutoSave = ui->ckAutoSave->isChecked();
-
-	//int sendInterval = ui->cboxSendInterval->currentText().toInt();
-	//if (sendInterval != AppConfig::SendInterval) {
-	//	AppConfig::SendInterval = sendInterval;
-	//	timerSend->setInterval(AppConfig::SendInterval);
-	//}
-
-	//int saveInterval = ui->cboxSaveInterval->currentText().toInt();
-	//if (saveInterval != AppConfig::SaveInterval) {
-	//	AppConfig::SaveInterval = saveInterval;
-	//	timerSave->setInterval(AppConfig::SaveInterval);
-	//}
-
-	//AppConfig::Mode = ui->cboxMode->currentText();
-	//AppConfig::ServerIP = ui->txtServerIP->text().trimmed();
-	//AppConfig::ServerPort = ui->txtServerPort->text().toInt();
-	//AppConfig::ListenPort = ui->txtListenPort->text().toInt();
-	//AppConfig::SleepTime = ui->cboxSleepTime->currentText().toInt();
-	//AppConfig::AutoConnect = ui->ckAutoConnect->isChecked();
-
 	AppConfig::writeConfig();
 }
 
@@ -647,113 +540,6 @@ void frmComTool::changeEnable(bool b)
 	ui->cboxParity->setEnabled(!b);
 	ui->cboxPortName->setEnabled(!b);
 	ui->cboxStopBit->setEnabled(!b);
-	//ui->btnSend->setEnabled(b);
-	//ui->ckAutoSend->setEnabled(b);
-	//ui->ckAutoSave->setEnabled(b);
-	//ui->progressBar->setValue(0);
-}
-
-void frmComTool::append(int type, const QString& data, bool clear)
-{
-	static int currentCount = 0;
-	static int maxCount = 100;
-
-	if (clear) {
-		//ui->txtMain->clear();
-		currentCount = 0;
-		return;
-	}
-
-	if (currentCount >= maxCount) {
-		//ui->txtMain->clear();
-		currentCount = 0;
-	}
-
-	//过滤回车换行符
-	QString strData = data;
-	strData = strData.replace("\r", "");
-	strData = strData.replace("\n", "");
-
-	//不同类型不同颜色显示
-	QString strType;
-	if (type == 0) {
-		strType = "串口发送 >>";
-		//ui->txtMain->setTextColor(QColor("dodgerblue"));
-	}
-	else if (type == 1) {
-		strType = "串口接收 <<";
-		//ui->txtMain->setTextColor(QColor("red"));
-	}
-	else if (type == 2) {
-		strType = "处理延时 >>";
-		//ui->txtMain->setTextColor(QColor("gray"));
-	}
-	else if (type == 3) {
-		strType = "正在校验 >>";
-		//ui->txtMain->setTextColor(QColor("green"));
-	}
-	else if (type == 4) {
-		strType = "网络发送 >>";
-		//ui->txtMain->setTextColor(QColor(24, 189, 155));
-	}
-	else if (type == 5) {
-		strType = "网络接收 <<";
-		//ui->txtMain->setTextColor(QColor(255, 107, 107));
-	}
-	else if (type == 6) {
-		strType = "提示信息 >>";
-		//ui->txtMain->setTextColor(QColor(100, 184, 255));
-	}
-
-	strData = QString("时间[%1] %2 %3").arg(TIMEMS).arg(strType).arg(strData);
-	//ui->txtMain->append(strData);
-	currentCount++;
-}
-
-void frmComTool::readData()
-{
-	//if (com->bytesAvailable() <= 0) {
-	//	return;
-	//}
-
-	//QtHelper::sleep(sleepTime);
-	//QByteArray data = com->readAll();
-	//int dataLen = data.length();
-	//if (dataLen <= 0) {
-	//	return;
-	//}
-
-	//if (isShow) {
-	//	QString buffer;
-	//	if (ui->ckHexReceive->isChecked()) {
-	//		buffer = QtHelperData::byteArrayToHexStr(data);
-	//	}
-	//	else {
-	//		//buffer = QtHelperData::byteArrayToAsciiStr(data);
-	//		buffer = QString::fromLocal8Bit(data);
-	//	}
-
-	//	//启用调试则模拟调试数据
-	//	if (ui->ckDebug->isChecked()) {
-	//		int count = AppData::Keys.count();
-	//		for (int i = 0; i < count; i++) {
-	//			if (buffer.startsWith(AppData::Keys.at(i))) {
-	//				sendData(AppData::Values.at(i));
-	//				break;
-	//			}
-	//		}
-	//	}
-
-	//	append(1, buffer);
-	//	receiveCount = receiveCount + data.size();
-	//	ui->btnReceiveCount->setText(QString("接收 : %1 字节").arg(receiveCount));
-
-	//	//启用网络转发则调用网络发送数据
-	//	if (tcpOk) {
-	//		socket->write(data);
-	//		append(4, QString(buffer));
-	//	}
-	//}
 }
 
 void frmComTool::readData(uint8_t type)
@@ -762,10 +548,6 @@ void frmComTool::readData(uint8_t type)
 	do
 	{
 		count++;
-		//if (com->bytesAvailable() <= 0) {
-		//	QtHelper::sleep(1);
-		//	continue;
-		//}
 		QtHelper::sleep(sleepTime);
 		QByteArray data;// = com->readAll();
 		int dataLen = data.length();
@@ -775,28 +557,7 @@ void frmComTool::readData(uint8_t type)
 
 		if (isShow) {
 			QString buffer;
-			//if (ui->ckHexReceive->isChecked()) {
-				//buffer = QtHelperData::byteArrayToHexStr(data);
-			//}
-			//else {
-				//buffer = QtHelperData::byteArrayToAsciiStr(data);
-			//	buffer = QString::fromLocal8Bit(data);
-			//}
-
-			//启用调试则模拟调试数据
-			//if (ui->ckDebug->isChecked()) {
-			//	int count = AppData::Keys.count();
-			//	for (int i = 0; i < count; i++) {
-				//	if (buffer.startsWith(AppData::Keys.at(i))) {
-				//		sendData(AppData::Values.at(i));
-				//		break;
-				//	}
-			//	}
-			//}
-
-			//append(1, buffer);
 			receiveCount = receiveCount + data.size();
-			//ui->btnReceiveCount->setText(QString("接收 : %1 字节").arg(receiveCount));
 		}
 	} while (count < 100);
 }
@@ -805,8 +566,6 @@ void  frmComTool::on_pushButton_clicked()
 {
 	QString strData = ui->textEdit->toPlainText();
 	// 使用您提供的十六进制字符串
-	//std::string userHexString = "eb90eb9001000101000000000000003c8000000101000000000000000000000000000000000001000000000000000000000000000000007d0d3e0603";
-
 	CommunicationProtocol protocol;
 	if (protocol.buildFromHexString(strData.toStdString()))
 	{
@@ -849,119 +608,7 @@ void  frmComTool::on_pushButton_clicked()
 	{
 		qDebug() << "解析失败";
 	}
-	// 将protocol.detectionFileData 保存成zip文件
-	//qDebug() << "保存检测文件...";
-	//qt_gzip_save_file("detection_file.zip", protocol.detectionFileData);
-	//qDebug() << "检测文件保存成功！";
-
-	//// 解压
-	//if (protocol.compressionFlag == 1)
-	//{
-
-	//	qDebug() << "开始解压...";
-	//	std::vector<uint8_t> uncompressedData = qt_gzip_compress(protocol.detectionFileData);
-	//	if (!uncompressedData.empty())
-	//	{
-	//		qDebug() << "解压成功！";
-	//		protocol.setDetectionFile(uncompressedData);
-	//	}
-	//	else
-	//	{
-	//		qDebug() << "解压失败！";
-	//	}
-	//}
-
-	// 从本地文件中读取二进制数据
-
 }
-
-
-// 功能：将多个文件压缩到 内存ZIP 数据流
-//bool frmComTool::zip_mem_compress(const std::vector<std::pair<std::string, std::vector<uint8_t>>>& files,std::vector<uint8_t>& zip_data) {
-	//// 1. 创建内存ZIP
-	//zlib_filefunc_def zff;
-	//fill_fopen_filefunc(&zff);
-
-	//zipFile zf = zipOpen2(nullptr, APPEND_STATUS_CREATE, nullptr, &zff);
-	//if (!zf) return false;
-
-	//// 2. 逐个添加文件
-	//for (const auto& file : files) {
-	//	const std::string& filename = file.first;
-	//	const std::vector<uint8_t>& data = file.second;
-
-	//	zipOpenNewFileInZip(
-	//		zf,
-	//		filename.c_str(),
-	//		nullptr,
-	//		nullptr, 0,
-	//		nullptr, 0,
-	//		nullptr,
-	//		Z_DEFLATED,
-	//		Z_DEFAULT_COMPRESSION
-	//	);
-
-	//	zipWriteInFileInZip(zf, data.data(), data.size());
-	//	zipCloseFileInZip(zf);
-	//}
-
-	//// 3. 关闭并获取内存ZIP
-	//zipClose(zf, nullptr);
-
-	//// 这里省略从内存获取ZIP数据的代码（需要ioapi_mem配合）
-	//// 完整代码我可以一次性给你全套
-	//return true;
-//}
-
-// Qt 原生解 GZIP（适配电力规约报文）
-//QByteArray frmComTool::qt_gzip_decompress(const QByteArray& gzipData)
-//{
-	//if (gzipData.isEmpty())
-	//	return QByteArray();
-
-	//z_stream strm;
-	//memset(&strm, 0, sizeof(z_stream));
-
-	//// 重点：告诉zlib这是标准gzip格式
-	//if (inflateInit2(&strm, MAX_WBITS | 32) != Z_OK) {
-	//	qDebug() << "zlib初始化失败";
-	//	return QByteArray();
-	//}
-
-	//strm.next_in = (Bytef*)gzipData.constData();
-	//strm.avail_in = (uInt)gzipData.size();
-
-	//QByteArray result;
-	//const int BUF_SIZE = 4096;
-	//unsigned char buffer[BUF_SIZE];
-
-	//do {
-	//	strm.avail_out = BUF_SIZE;
-	//	strm.next_out = buffer;
-
-	//	int ret = inflate(&strm, Z_NO_FLUSH);
-	//	if (ret < 0 && ret != Z_STREAM_END) {
-	//		qDebug() << "解压错误:" << ret;
-	//		inflateEnd(&strm);
-	//		return QByteArray();
-	//	}
-
-	//	int have = BUF_SIZE - strm.avail_out;
-	//	result.append((char*)buffer, have);
-
-	//} while (strm.avail_out == 0);
-
-	//inflateEnd(&strm);
-	//return result;
-//}
-
-//std::vector<uint8_t> frmComTool::qt_gzip_compress(std::vector<uint8_t> gzipData)
-//{
-	// 将std::vector 转换为 QByteArray
-  //  QByteArray zlibData = QByteArray::fromRawData(reinterpret_cast<const char*>(gzipData.data()), gzipData.size());
-	//QByteArray result = qt_gzip_decompress(zlibData);
-  //  return std::vector<uint8_t>(result.begin(), result.end());
-//}
 
 std::vector<uint8_t> frmComTool::qt_gzip_load_file(std::string filepath)
 {
@@ -1048,10 +695,6 @@ void frmComTool::on_pushButton_2_clicked()
 		qt_gzip_save_file("D:/test.dat", item, true);
 	}
 	qt_gzip_save_file("D:/test1.dat", data);
-
-
-
-
 }
 
 void frmComTool::on_pushButton_3_clicked()
@@ -1064,7 +707,7 @@ void frmComTool::on_pushButton_3_clicked()
 		for (auto item : mSendData)
 		{
 			sendData(item);
-			qDebug() << "发送数据成功"<< item.size();
+			qDebug() << "发送数据成功" << item.size();
 		}
 	}
 }
@@ -1109,6 +752,27 @@ void frmComTool::on_pushButton_5_clicked()
 	else
 	{
 		qDebug() << "解析图像数据失败！";
+	}
+}
+
+void frmComTool::on_pushButton_6_clicked()
+{
+	//打开文件选择，挑选jpg文件并显示在listWidget中
+	QStringList fileName = QFileDialog::getOpenFileNames(this, "选择文件", "", "JPG Files (*.jpg)");
+	if (!fileName.isEmpty())
+	{
+		for (const QString& fileName : fileName)
+		{
+			QImage image(fileName);
+			if (image.isNull())
+			{
+				QMessageBox::information(this, "错误", "无法打开图片文件！");
+				return;
+			}
+			// 向 mCurrentItem 增加子节点
+			QTreeWidgetItem* currentParent = new QTreeWidgetItem(mCurrentItem);
+			currentParent->setText(0, fileName);
+		}
 	}
 }
 
@@ -1221,37 +885,10 @@ void frmComTool::sendData()
 
 }
 
-void frmComTool::sendData(QString data)
-{
-	//if (com == 0 || !com->isOpen()) {
-	//	return;
-	//}
 
-	////短信猫调试
-	//if (data.startsWith("AT")) {
-	//	data += "\r";
-	//}
-
-	//QByteArray buffer;
-	//if (ui->ckHexSend->isChecked()) {
-	//	buffer = QtHelperData::hexStrToByteArray(data);
-	//}
-	//else {
-	//	buffer = QtHelperData::asciiStrToByteArray(data);
-	//}
-
-	//com->write(buffer);
-	//append(0, data);
-	//sendCount = sendCount + buffer.size();
-	//ui->btnSendCount->setText(QString("发送 : %1 字节").arg(sendCount));
-}
 
 void frmComTool::sendData(std::vector<uint8_t> data)
 {
-	//if (com == 0 || !com->isOpen()) {
-	//	return;
-	//}
-
 	//std::vector<uint8_t> 转成QTypeBuffer
 	QByteArray buffer1;
 	buffer1.append((char*)data.data(), data.size());
@@ -1263,9 +900,7 @@ void frmComTool::sendData(std::vector<uint8_t> data)
 	//将data 转成字符串
 	QString buffer = QtHelperData::vectorToHexStr(data);
 
-	append(0, buffer);
 	sendCount = sendCount + data.size();
-	//ui->btnSendCount->setText(QString("发送 : %1 字节").arg(sendCount));
 }
 
 void frmComTool::sendData(const QByteArray& data)
@@ -1275,171 +910,32 @@ void frmComTool::sendData(const QByteArray& data)
 	}
 }
 
-void frmComTool::saveData()
-{
-	//QString tempData = ui->txtMain->toPlainText();
-	//if (tempData.isEmpty()) {
-	//	return;
-	//}
-
-	QDateTime now = QDateTime::currentDateTime();
-	QString name = now.toString("yyyy-MM-dd-HH-mm-ss");
-	QString fileName = QString("%1/%2.txt").arg(QtHelper::appPath()).arg(name);
-
-	QFile file(fileName);
-	file.open(QFile::WriteOnly | QIODevice::Text);
-	QTextStream out(&file);
-	//out << tempData;
-	file.close();
-
-	on_btnClear_clicked();
-}
 
 void frmComTool::reLoad()
 {
 	if (reLoadTimes > 0) {
-		//timerReLoad->start(1000);
-		//ui->pushButton_SetTrigger_2->setText(QString("充电中..%1s").arg(reloadtimes));
 		reLoadTimes--;
 		return;
 	}
 	reLoadTimes = 10;
-	//timerReLoad->stop();
-	//ui->pushButton_SetTrigger_2->setEnabled(true);
-	//ui->pushButton_SetTrigger_2->setText("");
 }
 
 void frmComTool::on_btnOpen_clicked()
 {
 	if (ui->btnOpen->text() == "打开串口") {
 		openSerialPort();
-
-		//com = new QextSerialPort(ui->cboxPortName->currentText(), QextSerialPort::Polling);
-		//comOk = com->open(QIODevice::ReadWrite);
-
-		//if (comOk) {
-		//	//清空缓冲区
-		//	com->flush();
-		//	//设置波特率
-		//	com->setBaudRate((BaudRateType)ui->cboxBaudRate->currentText().toInt());
-		//	//设置数据位
-		//	com->setDataBits((DataBitsType)ui->cboxDataBit->currentText().toInt());
-		//	//设置校验位
-		//	com->setParity((ParityType)ui->cboxParity->currentIndex());
-		//	//设置停止位
-		//	com->setStopBits((StopBitsType)ui->cboxStopBit->currentIndex());
-		//	com->setFlowControl(FLOW_OFF);
-		//	com->setTimeout(10);
-
-		//	changeEnable(true);
-		//	ui->btnOpen->setText("关闭串口");
-		//	//timerRead->start();
-		//}
 	}
 	else {
 		closeSerialPort();
-
 		changeEnable(false);
 		ui->btnOpen->setText("打开串口");
-		//on_btnClear_clicked();
 	}
-}
-
-void frmComTool::on_btnSendCount_clicked()
-{
-	sendCount = 0;
-	//ui->btnSendCount->setText("发送 : 0 字节");
 }
 
 void frmComTool::on_btnReceiveCount_clicked()
 {
 	receiveCount = 0;
 	//ui->btnReceiveCount->setText("接收 : 0 字节");
-}
-void frmComTool::on_pushButton_ReadStation_clicked()
-{
-	//ui->lineEdit_Station->setText("");
-	sendData(Modbus::Modbus_Read_Station());
-	//readData(0x00);
-}
-void frmComTool::on_pushButton_ReadBT_clicked()
-{
-	//ui->lineEdit_BT->setText("");
-	sendData(Modbus::Modbus_Read_BT());
-	//readData(0x01);
-}
-void frmComTool::on_pushButton_ReadTrigger_clicked()
-{
-	//ui->lineEdit_Trigger->setText("");
-	sendData(Modbus::Modbus_Read_Trigger());
-	//readData(0x02);
-}
-void frmComTool::on_pushButton_SetTrigger_clicked()
-{
-	sendData(Modbus::Modbus_Set_Trigger(0x55));
-	//readData(0x02);
-}
-void frmComTool::on_pushButton_SetTrigger_2_clicked()
-{
-
-	//	ui->pushButton_SetTrigger_2->setEnabled(false);
-		//ui->pushButton_SetTrigger_2->setText("充电中。。");
-	//timerReLoad->start(1000);
-	m_state = 1;
-	//timerSend->setInterval(1000);
-	sendData(Modbus::Modbus_Set_Trigger(0x55));
-}
-void frmComTool::on_pushButton_ReadState_clicked()
-{
-	//ui->lineEdit_State->setText("");
-	sendData(Modbus::Modbus_Read_Detection_State());
-	//readData(0x10);
-}
-void frmComTool::on_pushButton_ReadResult_clicked()
-{
-	//ui->lineEdit_Result->setText("");
-	sendData(Modbus::Modbus_Read_Detection_Result());
-	//readData(0x11);
-}
-void frmComTool::on_pushButton_ReadBattery_clicked()
-{
-	//ui->progressBar->setValue(0);
-	sendData(Modbus::Modbus_Read_Power());
-	//readData(0x12);
-}
-
-//
-//void frmComTool::on_btnData_clicked()
-//{
-//    QString fileName = QString("%1/%2").arg(QtHelper::appPath()).arg("send.txt");
-//    QFile file(fileName);
-//    if (!file.exists()) {
-//        return;
-//    }
-//
-//    if (ui->btnData->text() == "管理数据") {
-//        ui->txtMain->setReadOnly(false);
-//        ui->txtMain->clear();
-//        file.open(QFile::ReadOnly | QIODevice::Text);
-//        QTextStream in(&file);
-//        ui->txtMain->setText(in.readAll());
-//        file.close();
-//        ui->btnData->setText("保存数据");
-//    } else {
-//        ui->txtMain->setReadOnly(true);
-//        file.open(QFile::WriteOnly | QIODevice::Text);
-//        QTextStream out(&file);
-//        out << ui->txtMain->toPlainText();
-//        file.close();
-//        ui->txtMain->clear();
-//        ui->btnData->setText("管理数据");
-//        AppData::readSendData();
-//    }
-//}
-
-void frmComTool::on_btnClear_clicked()
-{
-	append(0, "", true);
 }
 
 void frmComTool::onTreeItemClicked(QTreeWidgetItem* item, int column)
@@ -1467,6 +963,7 @@ void frmComTool::onTreeItemClicked(QTreeWidgetItem* item, int column)
 	case 3:
 		// 树第四层级
 		qDebug() << "树第四层级";
+		mCurrentItem = item;
 		break;
 	default:
 		break;
@@ -1474,50 +971,6 @@ void frmComTool::onTreeItemClicked(QTreeWidgetItem* item, int column)
 
 }
 
-//void frmComTool::on_btnStart_clicked()
-//{
-	//if (ui->btnStart->text() == "启动") {
-	//    if (AppConfig::ServerIP == "" || AppConfig::ServerPort == 0) {
-	//        append(6, "IP地址和远程端口不能为空");
-	//        return;
-	//    }
 
-	//    socket->connectToHost(AppConfig::ServerIP, AppConfig::ServerPort);
-	//    if (socket->waitForConnected(100)) {
-	//        ui->btnStart->setText("停止");
-	//        append(6, "连接服务器成功");
-	//        tcpOk = true;
-	//    }
-	//} else {
-	//    socket->disconnectFromHost();
-	//    if (socket->state() == QAbstractSocket::UnconnectedState || socket->waitForDisconnected(100)) {
-	//        ui->btnStart->setText("启动");
-	//        append(6, "断开服务器成功");
-	//        tcpOk = false;
-	//    }
-	//}
-//}
 
-void frmComTool::on_ckAutoSend_stateChanged(int arg1)
-{
-	if (arg1 == 0) {
-		//	ui->cboxSendInterval->setEnabled(false);
-		//timerSend->stop();
-	}
-	else {
-		//	ui->cboxSendInterval->setEnabled(true);
-		//timerSend->start();
-	}
-}
 
-void frmComTool::on_ckAutoSave_stateChanged(int arg1)
-{
-	if (arg1 == 0) {
-		//ui->cboxSaveInterval->setEnabled(false);
-		//timerSave->stop();
-	}
-	else {
-		//ui->cboxSaveInterval->setEnabled(true);
-		//timerSave->start();
-	}
-}

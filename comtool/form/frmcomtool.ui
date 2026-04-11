@@ -270,9 +270,6 @@
            </column>
           </widget>
          </item>
-         <item>
-          <widget class="QListView" name="listView"/>
-         </item>
         </layout>
        </widget>
       </widget>
@@ -286,6 +283,13 @@
         <widget class="QPushButton" name="pushButton_3">
          <property name="text">
           <string>(发送)任务确认</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_6">
+         <property name="text">
+          <string>插入图片</string>
          </property>
         </widget>
        </item>
