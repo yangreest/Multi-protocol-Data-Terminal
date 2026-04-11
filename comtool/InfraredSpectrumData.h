@@ -111,10 +111,10 @@ public:
 	// 24.红外图谱数据 (可变长度) [512:512+k*w*h-1] - 必备
 	std::vector<uint8_t> infraredSpectData;
 
-	// 23. 可见光照片数据 (可变长度) [512+k*w*h:512+k*w*h+L1-1] - 必备
+	// 25. 可见光照片数据 (可变长度) [512+k*w*h:512+k*w*h+L1-1] - 必备
 	std::vector<uint8_t> visibleLightPhotoData;
 
-	// 24. 红外照片数据 (可变长度) [512+k*w*h+L1:512+k*w*h+L1+L2-1] - 必备
+	// 26. 红外照片数据 (可变长度) [512+k*w*h+L1:512+k*w*h+L1+L2-1] - 必备
 	std::vector<uint8_t> infraredPhotoData;
 
 	// ==================== 构造函数 ====================

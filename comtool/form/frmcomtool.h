@@ -83,7 +83,7 @@ private slots:
 	void addTreeConmunicationItem();
 	void addTreeItemImageData(QTreeWidgetItem* parentItem);
     void addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem);
-	void addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type);
+	QTreeWidgetItem* addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type);
 	// 根据参数名称查找节点（第一列）
 	QTreeWidgetItem* findItemByName(const QString& name);
 

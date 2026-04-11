@@ -31,6 +31,7 @@ void frmComTool::initTreeWidget()
 	ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 	ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
+	ui->treeWidget_2->setEditTriggers(QAbstractItemView::DoubleClicked);
 	ui->treeWidget_2->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 	ui->treeWidget_2->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
@@ -410,9 +411,7 @@ void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
 	addChildItem(parentItem, "预留", "byte[204] (204字节)");
 
 	// 19 图谱数据
-	addChildItem(parentItem, "图谱数据", "动态长度");
-
-	imageItem = findItemByName("图谱数据");
+	imageItem = addChildItem(parentItem, "图谱数据", "动态长度");
 
 	// 20 文件尾部预留
 	addChildItem(parentItem, "文件尾部预留", "byte[32] (32字节)");
@@ -423,17 +422,94 @@ void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
 
 void frmComTool::addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem)
 {
-
+    // 1. 检测数据类型编码
+    addChildItem(parentItem, "检测数据类型编码", "uint8_t (1字节)");
+    
+    // 2. 图谱数据长度
+    addChildItem(parentItem, "图谱数据长度", "uint32_t (4字节)");
+    
+    // 3. 图谱生成时间
+    addChildItem(parentItem, "图谱生成时间", "uint64_t (8字节)");
+    
+    // 4. 图谱性质
+    addChildItem(parentItem, "图谱性质", "uint8_t (1字节)");
+    
+    // 5. 被检测设备名称
+    addChildItem(parentItem, "被检测设备名称", "char[118] (118字节)");
+    
+    // 6. 被检测设备编码
+    addChildItem(parentItem, "被检测设备编码", "char[42] (42字节)");
+    
+    // 7. 测点名称
+    addChildItem(parentItem, "测点名称", "char[128] (128字节)");
+    
+    // 8. 测点编码
+    addChildItem(parentItem, "测点编码", "char[32] (32字节)");
+    
+    // 9. 检测通道标志
+    addChildItem(parentItem, "检测通道标志", "int16_t (2字节)");
+    
+    // 10. 存储器数据类型
+    addChildItem(parentItem, "存储器数据类型", "uint8_t (1字节)");
+    
+    // 11. 温度单位
+    addChildItem(parentItem, "温度单位", "uint8_t (1字节)");
+    
+    // 12. 温度点阵宽度
+    addChildItem(parentItem, "温度点阵宽度 w", "uint32_t (4字节)");
+    
+    // 13. 温度点阵高度
+    addChildItem(parentItem, "温度点阵高度 h", "uint32_t (4字节)");
+    
+    // 14. 可见光照片数据长度
+    addChildItem(parentItem, "可见光照片数据长度 L1", "uint32_t (4字节)");
+    
+    // 15. 红外照片数据长度
+    addChildItem(parentItem, "红外照片数据长度 L2", "uint32_t (4字节)");
+    
+    // 16. 辐射率
+    addChildItem(parentItem, "辐射率", "float (4字节)");
+    
+    // 17. 测试距离
+    addChildItem(parentItem, "测试距离", "float (4字节)");
+    
+    // 18. 大气温度
+    addChildItem(parentItem, "大气温度", "float (4字节)");
+    
+    // 19. 相对湿度
+    addChildItem(parentItem, "相对湿度", "uint8_t (1字节)");
+    
+    // 20. 反射温度
+    addChildItem(parentItem, "反射温度", "float (4字节)");
+    
+    // 21. 温宽上限
+    addChildItem(parentItem, "温宽上限", "float (4字节)");
+    
+    // 22. 温宽下限
+    addChildItem(parentItem, "温宽下限", "float (4字节)");
+    
+    // 23. 文件尾部预留
+    addChildItem(parentItem, "文件尾部预留", "byte[133] (133字节)");
+    
+    // 24. 红外图谱数据
+    addChildItem(parentItem, "红外图谱数据", "动态长度");
+    
+    // 25. 可见光照片数据
+    addChildItem(parentItem, "可见光照片数据", "动态长度");
+    
+    // 26. 红外照片数据
+    addChildItem(parentItem, "红外照片数据", "动态长度");
 }
 
 
 // 工具函数：添加二级子节点
-void frmComTool::addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type)
+QTreeWidgetItem* frmComTool::addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type)
 {
 	QTreeWidgetItem* item = new QTreeWidgetItem(parent);
 	item->setText(0, name);
 	item->setText(1, type);
 	item->setExpanded(true);
+	return item;
 }
 
 void frmComTool::onSerialPortOpened()
@@ -772,6 +848,34 @@ void frmComTool::on_pushButton_6_clicked()
 			// 向 mCurrentItem 增加子节点
 			QTreeWidgetItem* currentParent = new QTreeWidgetItem(mCurrentItem);
 			currentParent->setText(0, fileName);
+
+			// 判断当前mCurrentItem是否有子节点
+			if (mCurrentItem->childCount() == 0)
+			{
+				imageItem->setText(0, fileName);
+				addTreeItemInfraredSpectrumData(imageItem);
+			}
+			else
+			{
+				// 增加节点
+				QTreeWidgetItem* targetItem = imageItem;
+				QTreeWidgetItem* newItem = new QTreeWidgetItem();
+				newItem->setText(0, fileName);
+				if (QTreeWidgetItem* parent = targetItem->parent()) {
+					// 获取目标节点在父节点里的索引
+					int index = parent->indexOfChild(targetItem) + 1;
+					// 插到它前面
+					parent->insertChild(index, newItem);
+				}
+				else {
+					// 顶层节点
+					int index = ui->treeWidget_2->indexOfTopLevelItem(targetItem) + 1;
+					// 获取目标节点的名称
+					ui->treeWidget_2->insertTopLevelItem(index, newItem);
+				}
+				imageItem = newItem;
+				addTreeItemInfraredSpectrumData(imageItem);
+			}
 		}
 	}
 }
@@ -781,6 +885,7 @@ QTreeWidgetItem* frmComTool::findItemByName(const QString& name)
 	// 遍历所有一级节点
 	for (int i = 0; i < ui->treeWidget_2->topLevelItemCount(); i++) {
 		QTreeWidgetItem* item = ui->treeWidget_2->topLevelItem(i);
+		qDebug() << item->text(0);
 		if (item->text(0) == name) {
 			return item; // 找到返回
 		}
