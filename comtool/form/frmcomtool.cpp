@@ -2,9 +2,7 @@
 #include "ui_frmcomtool.h"
 #include "qthelper.h"
 #include "qthelperdata.h"
-#include <CommunicationProtocol.h>
-#include <InfraredSpectrumData.h>
-#include <ImageData.h>
+
 #include <QByteArray>
 
 frmComTool::frmComTool(QWidget* parent) : QWidget(parent), ui(new Ui::frmComTool)
@@ -42,6 +40,7 @@ void frmComTool::initTreeWidget()
 	ui->treeWidget_2->setStyleSheet("QTreeWidget::item { height: 25px; }");
 
 	addTreeConmunicationItem();
+	addData2TreeCommunication();
 
 	//QTreeWidgetItem*  = findItemByName("检测数据文件");
 	//if (imageItem)
@@ -269,89 +268,201 @@ void frmComTool::addTreeConmunicationItem()
 {
 	// 1 报文头
 	QTreeWidgetItem* item1 = new QTreeWidgetItem(ui->treeWidget_2);
+	item1->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item1->setText(0, "报文头");
 	item1->setText(1, "uint32_t (4字节)");
 
 	// 2 版本号
 	QTreeWidgetItem* item2 = new QTreeWidgetItem(ui->treeWidget_2);
+	item2->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item2->setText(0, "版本号");
 	item2->setText(1, "uint8_t (1字节)");
+	//item2->setText(2, QString("0x%1").arg(m_protocol.version, 2, 16, QChar('0')).toUpper());
 
 	// 3 序号
 	QTreeWidgetItem* item3 = new QTreeWidgetItem(ui->treeWidget_2);
+	item3->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item3->setText(0, "序号");
 	item3->setText(1, "uint16_t (2字节)");
+	//item3->setText(2, QString("0x%1").arg(m_protocol.sequenceNumber, 4, 16, QChar('0')).toUpper());
+
 
 	// 4 请求标志
 	QTreeWidgetItem* item4 = new QTreeWidgetItem(ui->treeWidget_2);
+	item4->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item4->setText(0, "请求标志");
 	item4->setText(1, "uint8_t (1字节)");
+	//item4->setText(2, QString("0x%1").arg(m_protocol.requestFlag, 2, 16, QChar('0')).toUpper());
 
 	// 5 数据包总长度
 	QTreeWidgetItem* item5 = new QTreeWidgetItem(ui->treeWidget_2);
+	item5->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item5->setText(0, "数据包总长度");
 	item5->setText(1, "uint64_t (8字节)");
+	//item5->setText(2, QString("0x%1").arg(m_protocol.totalPacketLength, 16, 16, QChar('0')).toUpper());
 
 	// 6 报文类型编码
 	QTreeWidgetItem* item6 = new QTreeWidgetItem(ui->treeWidget_2);
+	item6->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item6->setText(0, "报文类型编码");
 	item6->setText(1, "uint32_t (4字节)");
+	//item6->setText(2, QString("0x%1").arg(m_protocol.packetTypeCode, 8, 16, QChar('0')).toUpper());
 
 	// 7 压缩标志
 	QTreeWidgetItem* item7 = new QTreeWidgetItem(ui->treeWidget_2);
+	item7->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item7->setText(0, "压缩标志");
 	item7->setText(1, "uint8_t (1字节)");
+	//item7->setText(2, QString("0x%1").arg(m_protocol.compressionFlag, 2, 16, QChar('0')).toUpper());
 
 	// 8 加密标志
 	QTreeWidgetItem* item8 = new QTreeWidgetItem(ui->treeWidget_2);
+	item8->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item8->setText(0, "加密标志");
 	item8->setText(1, "uint8_t (1字节)");
+	//item8->setText(2, QString("0x%1").arg(m_protocol.encryptionFlag, 2, 16, QChar('0')).toUpper());
 
 	// 9 仪器厂商
 	QTreeWidgetItem* item9 = new QTreeWidgetItem(ui->treeWidget_2);
+	item9->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item9->setText(0, "仪器厂商");
 	item9->setText(1, "uint8_t (1字节)");
+	//item9->setText(2, QString("0x%1").arg(m_protocol.instrumentVendor, 2, 16, QChar('0')).toUpper());
 
 	// 10 备用
 	QTreeWidgetItem* item10 = new QTreeWidgetItem(ui->treeWidget_2);
+	item10->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item10->setText(0, "备用");
 	item10->setText(1, "uint8_t[15] (15字节)");
+	//item10->setText(2, "0x00");
 
 	// 11 业务数据格式
 	QTreeWidgetItem* item11 = new QTreeWidgetItem(ui->treeWidget_2);
+	item11->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item11->setText(0, "业务数据格式");
 	item11->setText(1, "uint8_t (1字节)");
+	//item11->setText(2, QString("0x%1").arg(m_protocol.serviceDataFormat, 2, 16, QChar('0')).toUpper());
 
 	// 12 业务数据长度
 	QTreeWidgetItem* item12 = new QTreeWidgetItem(ui->treeWidget_2);
+	item12->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item12->setText(0, "业务数据长度");
 	item12->setText(1, "uint64_t (8字节)");
+	//item12->setText(2, QString("0x%1").arg(m_protocol.serviceDataLength, 16, 16, QChar('0')).toUpper());
 
 	// 13 业务数据
 	QTreeWidgetItem* item13 = new QTreeWidgetItem(ui->treeWidget_2);
+	item13->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item13->setText(0, "业务数据");
 	item13->setText(1, "uint8_t 数组 (动态)");
+	//item13->setText(2, m_protocol.getServiceDataString().c_str());
 
 	// 14 检测数据文件长度
 	QTreeWidgetItem* item14 = new QTreeWidgetItem(ui->treeWidget_2);
+	item14->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item14->setText(0, "检测数据文件长度");
 	item14->setText(1, "uint64_t (8字节)");
+	//item14->setText(2, QString("0x%1").arg(m_protocol.detectionFileLength, 16, 16, QChar('0')).toUpper());
 
 	// 15 检测数据文件
 	QTreeWidgetItem* item15 = new QTreeWidgetItem(ui->treeWidget_2);
+	item15->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item15->setText(0, "检测数据文件");
 	item15->setText(1, "uint8_t 数组 (动态)");
 	fileItem = item15;
 
 	// 16 校验字节
 	QTreeWidgetItem* item16 = new QTreeWidgetItem(ui->treeWidget_2);
+	item16->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item16->setText(0, "校验字节(CRC32)");
 	item16->setText(1, "uint32_t (4字节)");
+	//item16->setText(2, QString("0x%1").arg(m_protocol.crc32Checksum, 8, 16, QChar('0')).toUpper());
 
 	// 17 报文尾
 	QTreeWidgetItem* item17 = new QTreeWidgetItem(ui->treeWidget_2);
+	item17->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	item17->setText(0, "报文尾");
 	item17->setText(1, "uint8_t (1字节)");
+	//item17->setText(2, QString("0x%1").arg(m_protocol.packetTail, 2, 16, QChar('0')).toUpper());
+}
+
+void frmComTool::addData2TreeCommunication()
+{
+	QList<QTreeWidgetItem*> items = ui->treeWidget_2->findItems("报文头", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.packetHeader, 8, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("版本号", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.version, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("序号", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.sequenceNumber, 4, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("请求标志", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.requestFlag, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("数据包总长度", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.totalPacketLength, 16, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("报文类型编码", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.packetTypeCode, 8, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("压缩标志", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.compressionFlag, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("加密标志", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.encryptionFlag, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("仪器厂商", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.instrumentVendor, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("业务数据格式", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.serviceDataFormat, 2, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("业务数据长度", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.serviceDataLength, 16, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("业务数据", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, m_protocol.getServiceDataString().c_str());
+	}
+	items = ui->treeWidget_2->findItems("检测数据文件长度", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.detectionFileLength, 16, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("校验字节(CRC32)", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.crc32Checksum, 8, 16, QChar('0')).toUpper());
+	}
+	items = ui->treeWidget_2->findItems("报文尾", Qt::MatchExactly, 0);
+	if (!items.isEmpty())
+	{
+		items.first()->setText(2, QString("0x%1").arg(m_protocol.packetTail, 2, 16, QChar('0')).toUpper());
+	}
 }
 
 void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
@@ -418,97 +529,184 @@ void frmComTool::addTreeItemImageData(QTreeWidgetItem* parentItem)
 
 	// 21 CRC32
 	addChildItem(parentItem, "CRC32", "int32 (4字节)");
+
+	ImageData p;
+	m_protocol.detectionFilesData.push_back(p);
+}
+
+void frmComTool::addData2TreeImageData()
+{
+	QList<QTreeWidgetItem*> mQtreeItemList;
+	// 遍历树的子节点，如果其有子节点则保存到Qlist中
+	for (size_t i = 0; i < ui->treeWidget_2->topLevelItemCount(); i++)
+	{
+		QTreeWidgetItem* item = ui->treeWidget_2->topLevelItem(i);
+		if (item->childCount() != 0)
+		{
+			mQtreeItemList.append(item);
+		}
+	}
+	int itemcout = 0;
+	for (auto item : mQtreeItemList)
+	{
+		for (int i = 0; i < item->childCount(); i++)
+		{
+			QString itemName = item->child(i)->text(0);
+			if (itemName == "文件长度 L")item->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(itemcout).fileLength, 8, 16, QChar('0')).toUpper());
+			else if (itemName == "规范版本号")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getVersionString()));
+			else if (itemName == "文件生成时间")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getCreateTimeString()));
+			else if (itemName == "站点名称")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getStationNameString()));
+			else if (itemName == "站点编码")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getStationCodeString()));
+			else if (itemName == "天气")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getWeatherDescription()));
+			else if (itemName == "温度")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).temperature));
+			else if (itemName == "湿度")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).humidity));
+			else if (itemName == "仪器厂家")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getInstrumentManufacturerString()));
+			else if (itemName == "仪器型号")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getInstrumentModelString()));
+			else if (itemName == "仪器版本号")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getInstrumentVersionString()));
+			else if (itemName == "仪器序列号")item->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(itemcout).getInstrumentSerialNumberString()));
+			else if (itemName == "系统频率")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).systemFrequency));
+			else if (itemName == "图谱数量 N")item->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(itemcout).spectrumCount, 4, 16, QChar('0')).toUpper());
+			else if (itemName == "经度")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).longitude));
+			else if (itemName == "纬度")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).latitude));
+			else if (itemName == "海拔")item->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(itemcout).altitude));
+			else if (itemName == "CRC32")item->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(itemcout).crc32, 8, 16, QChar('0')).toUpper());
+		}
+		itemcout++;
+	}
+
 }
 
 void frmComTool::addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem)
 {
-    // 1. 检测数据类型编码
-    addChildItem(parentItem, "检测数据类型编码", "uint8_t (1字节)");
-    
-    // 2. 图谱数据长度
-    addChildItem(parentItem, "图谱数据长度", "uint32_t (4字节)");
-    
-    // 3. 图谱生成时间
-    addChildItem(parentItem, "图谱生成时间", "uint64_t (8字节)");
-    
-    // 4. 图谱性质
-    addChildItem(parentItem, "图谱性质", "uint8_t (1字节)");
-    
-    // 5. 被检测设备名称
-    addChildItem(parentItem, "被检测设备名称", "char[118] (118字节)");
-    
-    // 6. 被检测设备编码
-    addChildItem(parentItem, "被检测设备编码", "char[42] (42字节)");
-    
-    // 7. 测点名称
-    addChildItem(parentItem, "测点名称", "char[128] (128字节)");
-    
-    // 8. 测点编码
-    addChildItem(parentItem, "测点编码", "char[32] (32字节)");
-    
-    // 9. 检测通道标志
-    addChildItem(parentItem, "检测通道标志", "int16_t (2字节)");
-    
-    // 10. 存储器数据类型
-    addChildItem(parentItem, "存储器数据类型", "uint8_t (1字节)");
-    
-    // 11. 温度单位
-    addChildItem(parentItem, "温度单位", "uint8_t (1字节)");
-    
-    // 12. 温度点阵宽度
-    addChildItem(parentItem, "温度点阵宽度 w", "uint32_t (4字节)");
-    
-    // 13. 温度点阵高度
-    addChildItem(parentItem, "温度点阵高度 h", "uint32_t (4字节)");
-    
-    // 14. 可见光照片数据长度
-    addChildItem(parentItem, "可见光照片数据长度 L1", "uint32_t (4字节)");
-    
-    // 15. 红外照片数据长度
-    addChildItem(parentItem, "红外照片数据长度 L2", "uint32_t (4字节)");
-    
-    // 16. 辐射率
-    addChildItem(parentItem, "辐射率", "float (4字节)");
-    
-    // 17. 测试距离
-    addChildItem(parentItem, "测试距离", "float (4字节)");
-    
-    // 18. 大气温度
-    addChildItem(parentItem, "大气温度", "float (4字节)");
-    
-    // 19. 相对湿度
-    addChildItem(parentItem, "相对湿度", "uint8_t (1字节)");
-    
-    // 20. 反射温度
-    addChildItem(parentItem, "反射温度", "float (4字节)");
-    
-    // 21. 温宽上限
-    addChildItem(parentItem, "温宽上限", "float (4字节)");
-    
-    // 22. 温宽下限
-    addChildItem(parentItem, "温宽下限", "float (4字节)");
-    
-    // 23. 文件尾部预留
-    addChildItem(parentItem, "文件尾部预留", "byte[133] (133字节)");
-    
-    // 24. 红外图谱数据
-    addChildItem(parentItem, "红外图谱数据", "动态长度");
-    
-    // 25. 可见光照片数据
-    addChildItem(parentItem, "可见光照片数据", "动态长度");
-    
-    // 26. 红外照片数据
-    addChildItem(parentItem, "红外照片数据", "动态长度");
+	// 1. 检测数据类型编码
+	addChildItem(parentItem, "检测数据类型编码", "uint8_t (1字节)");
+
+	// 2. 图谱数据长度
+	addChildItem(parentItem, "图谱数据长度", "uint32_t (4字节)");
+
+	// 3. 图谱生成时间
+	addChildItem(parentItem, "图谱生成时间", "uint64_t (8字节)");
+
+	// 4. 图谱性质
+	addChildItem(parentItem, "图谱性质", "uint8_t (1字节)");
+
+	// 5. 被检测设备名称
+	addChildItem(parentItem, "被检测设备名称", "char[118] (118字节)");
+
+	// 6. 被检测设备编码
+	addChildItem(parentItem, "被检测设备编码", "char[42] (42字节)");
+
+	// 7. 测点名称
+	addChildItem(parentItem, "测点名称", "char[128] (128字节)");
+
+	// 8. 测点编码
+	addChildItem(parentItem, "测点编码", "char[32] (32字节)");
+
+	// 9. 检测通道标志
+	addChildItem(parentItem, "检测通道标志", "int16_t (2字节)");
+
+	// 10. 存储器数据类型
+	addChildItem(parentItem, "存储器数据类型", "uint8_t (1字节)");
+
+	// 11. 温度单位
+	addChildItem(parentItem, "温度单位", "uint8_t (1字节)");
+
+	// 12. 温度点阵宽度
+	addChildItem(parentItem, "温度点阵宽度 w", "uint32_t (4字节)");
+
+	// 13. 温度点阵高度
+	addChildItem(parentItem, "温度点阵高度 h", "uint32_t (4字节)");
+
+	// 14. 可见光照片数据长度
+	addChildItem(parentItem, "可见光照片数据长度 L1", "uint32_t (4字节)");
+
+	// 15. 红外照片数据长度
+	addChildItem(parentItem, "红外照片数据长度 L2", "uint32_t (4字节)");
+
+	// 16. 辐射率
+	addChildItem(parentItem, "辐射率", "float (4字节)");
+
+	// 17. 测试距离
+	addChildItem(parentItem, "测试距离", "float (4字节)");
+
+	// 18. 大气温度
+	addChildItem(parentItem, "大气温度", "float (4字节)");
+
+	// 19. 相对湿度
+	addChildItem(parentItem, "相对湿度", "uint8_t (1字节)");
+
+	// 20. 反射温度
+	addChildItem(parentItem, "反射温度", "float (4字节)");
+
+	// 21. 温宽上限
+	addChildItem(parentItem, "温宽上限", "float (4字节)");
+
+	// 22. 温宽下限
+	addChildItem(parentItem, "温宽下限", "float (4字节)");
+
+	// 23. 文件尾部预留
+	addChildItem(parentItem, "文件尾部预留", "byte[133] (133字节)");
+
+	// 24. 红外图谱数据
+	addChildItem(parentItem, "红外图谱数据", "动态长度");
+
+	// 25. 可见光照片数据
+	addChildItem(parentItem, "可见光照片数据", "动态长度");
+
+	// 26. 红外照片数据
+	addChildItem(parentItem, "红外照片数据", "动态长度");
 }
 
+void frmComTool::addData2TreeInfraredSpectrumData(QTreeWidgetItem* parent)
+{
+	for (int i = 0; i < parent->childCount(); i++)
+	{
+		QString itemName = parent->child(i)->text(0);
+		if (itemName == "检测数据类型编码")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).dataTypeCode, 2, 16, QChar('0')).toUpper());
+		else if (itemName == "图谱数据长度")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).dataLength, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "图谱生成时间")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getCreateTimeString()));
+		else if (itemName == "图谱性质")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getSpectrumPropertyDescription()));
+		else if (itemName == "被检测设备名称")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getDeviceNameString()));
+		else if (itemName == "被检测设备编码")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getDeviceCodeString()));
+		else if (itemName == "测点名称")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getMeasurementPointNameString()));
+		else if (itemName == "测点编码")parent->child(i)->setText(2, QString("%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).getMeasurementPointCodeString()));
+		else if (itemName == "检测通道标志")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).detectionChannelFlag, 4, 16, QChar('0')).toUpper());
+		else if (itemName == "存储器数据类型")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).storageDataType, 2, 16, QChar('0')).toUpper());
+		else if (itemName == "温度单位")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).temperatureUnit, 2, 16, QChar('0')).toUpper());
+		else if (itemName == "温度点阵宽度 w")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).temperatureMatrixWidth, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "温度点阵高度 h")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).temperatureMatrixHeight, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "可见光照片数据长度 L1")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).visibleLightDataLength, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "红外照片数据长度 L2")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).infraredPhotoDataLength, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "辐射率")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).emissivity));
+		else if (itemName == "测试距离")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).testDistance));
+		else if (itemName == "大气温度")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).atmosphericTemperature));
+		else if (itemName == "相对湿度")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).relativeHumidity, 2, 16, QChar('0')).toUpper());
+		else if (itemName == "反射温度")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).reflectedTemperature));
+		else if (itemName == "温宽上限")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).temperatureRangeUpper));
+		else if (itemName == "温宽下限")parent->child(i)->setText(2, QString::number(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).temperatureRangeLower));
+		//else if (itemName == "文件尾部预留")parent->child(i)->setText(2, QString("0x%1").arg(m_protocol.detectionFilesData.at(0).infraredSpectrumData.at(0).fileTailReserved, 8, 16, QChar('0')).toUpper());
+		else if (itemName == "红外图谱数据")parent->child(i)->setText(2, QString(""));
+		else if (itemName == "可见光图谱数据")parent->child(i)->setText(2, QString(""));
+		else if (itemName == "红外照片数据")parent->child(i)->setText(2, QString(""));
+	}
+}
 
 // 工具函数：添加二级子节点
 QTreeWidgetItem* frmComTool::addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type)
 {
-	QTreeWidgetItem* item = new QTreeWidgetItem(parent);
+	QTreeWidgetItem* item = createEditableItem(parent);
 	item->setText(0, name);
 	item->setText(1, type);
-	item->setExpanded(true);
+	//item->setText(2, "输入参数");
+	item->setExpanded(true); //
+	return item;
+}
+
+
+QTreeWidgetItem* frmComTool::createEditableItem(QTreeWidgetItem* parent)
+{
+	QTreeWidgetItem* item = new QTreeWidgetItem(parent);
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 	return item;
 }
 
@@ -645,6 +843,7 @@ void  frmComTool::on_pushButton_clicked()
 	CommunicationProtocol protocol;
 	if (protocol.buildFromHexString(strData.toStdString()))
 	{
+
 		qDebug() << "成功解析用户提供的十六进制字符串";
 		qDebug() << "报文头：0x" << std::hex << protocol.packetHeader;
 		qDebug() << "版本号：" << (int)protocol.version;
@@ -679,6 +878,8 @@ void  frmComTool::on_pushButton_clicked()
 		{
 			qDebug() << "CRC32 校验失败（可能是示例字符串的 CRC 值不匹配）";
 		}
+		m_protocol = protocol;
+		addData2TreeCommunication();
 	}
 	else
 	{
@@ -833,51 +1034,47 @@ void frmComTool::on_pushButton_5_clicked()
 
 void frmComTool::on_pushButton_6_clicked()
 {
-	//打开文件选择，挑选jpg文件并显示在listWidget中
-	QStringList fileName = QFileDialog::getOpenFileNames(this, "选择文件", "", "JPG Files (*.jpg)");
-	if (!fileName.isEmpty())
+	// 弹出输入对话框，获取一个图像节点名称
+	bool ok;
+	QString fileName = QInputDialog::getText(this, "输入节点名称", "请输入图像节点名称：", QLineEdit::Normal, "", &ok);
+	if (!ok || fileName.isEmpty())
 	{
-		for (const QString& fileName : fileName)
-		{
-			QImage image(fileName);
-			if (image.isNull())
-			{
-				QMessageBox::information(this, "错误", "无法打开图片文件！");
-				return;
-			}
-			// 向 mCurrentItem 增加子节点
-			QTreeWidgetItem* currentParent = new QTreeWidgetItem(mCurrentItem);
-			currentParent->setText(0, fileName);
-
-			// 判断当前mCurrentItem是否有子节点
-			if (mCurrentItem->childCount() == 0)
-			{
-				imageItem->setText(0, fileName);
-				addTreeItemInfraredSpectrumData(imageItem);
-			}
-			else
-			{
-				// 增加节点
-				QTreeWidgetItem* targetItem = imageItem;
-				QTreeWidgetItem* newItem = new QTreeWidgetItem();
-				newItem->setText(0, fileName);
-				if (QTreeWidgetItem* parent = targetItem->parent()) {
-					// 获取目标节点在父节点里的索引
-					int index = parent->indexOfChild(targetItem) + 1;
-					// 插到它前面
-					parent->insertChild(index, newItem);
-				}
-				else {
-					// 顶层节点
-					int index = ui->treeWidget_2->indexOfTopLevelItem(targetItem) + 1;
-					// 获取目标节点的名称
-					ui->treeWidget_2->insertTopLevelItem(index, newItem);
-				}
-				imageItem = newItem;
-				addTreeItemInfraredSpectrumData(imageItem);
-			}
-		}
+		return;
 	}
+	// 向 mCurrentItem 增加子节点
+	QTreeWidgetItem* currentParent = new QTreeWidgetItem(mCurrentItem);
+
+	// 判断当前mCurrentItem是否有子节点
+	if (mCurrentItem->childCount() == 0)
+	{
+		imageItem->setText(0, fileName);
+		addTreeItemInfraredSpectrumData(imageItem);
+	}
+	else
+	{
+		// 增加节点
+		QTreeWidgetItem* targetItem = imageItem;
+		QTreeWidgetItem* newItem = new QTreeWidgetItem();
+		newItem->setText(0, fileName);
+		if (QTreeWidgetItem* parent = targetItem->parent()) {
+			// 获取目标节点在父节点里的索引
+			int index = parent->indexOfChild(targetItem) + 1;
+			// 插到它前面
+			parent->insertChild(index, newItem);
+		}
+		else {
+			// 顶层节点
+			int index = ui->treeWidget_2->indexOfTopLevelItem(targetItem) + 1;
+			// 获取目标节点的名称
+			ui->treeWidget_2->insertTopLevelItem(index, newItem);
+		}
+		imageItem = newItem;
+		addTreeItemInfraredSpectrumData(imageItem);
+	}
+	currentParent->setText(0, fileName);
+	InfraredSpectrumData p;
+	m_protocol.detectionFilesData.at(0).infraredSpectrumData.push_back(p);//TODO:at(0)与选中的mCurrentItem序号绑定
+	addData2TreeInfraredSpectrumData(imageItem);
 }
 
 QTreeWidgetItem* frmComTool::findItemByName(const QString& name)
@@ -897,14 +1094,16 @@ void frmComTool::packed_data_received(const std::vector<uint8_t>& data)
 {
 	qDebug() << "收到数据包：" << QByteArray::fromRawData(reinterpret_cast<const char*>(data.data()), data.size()).toHex();
 
-	CommunicationProtocol protocol;
+	//CommunicationProtocol protocol;
 
-	if (protocol.buildFromBytes(data))
+	if (m_protocol.buildFromBytes(data))
 	{
-		if (protocol.packetTypeCode == 0x00000001)
+		if (m_protocol.packetTypeCode == 0x00000001)
 		{
-			parseXmlToTree(formatXmlString(protocol.getServiceDataString()));
+			parseXmlToTree(formatXmlString(m_protocol.getServiceDataString()));
 		}
+		addData2TreeCommunication();
+		addData2TreeImageData();
 	}
 	else
 	{

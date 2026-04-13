@@ -83,7 +83,7 @@ public:
         toolBox_2->setObjectName("toolBox_2");
         page_3 = new QWidget();
         page_3->setObjectName("page_3");
-        page_3->setGeometry(QRect(0, 0, 399, 483));
+        page_3->setGeometry(QRect(0, 0, 154, 202));
         horizontalLayout_4 = new QHBoxLayout(page_3);
         horizontalLayout_4->setObjectName("horizontalLayout_4");
         frameTop = new QFrame(page_3);
@@ -173,7 +173,7 @@ public:
         toolBox_2->addItem(page_3, QString::fromUtf8("\345\217\202\346\225\260\351\205\215\347\275\256"));
         page_4 = new QWidget();
         page_4->setObjectName("page_4");
-        page_4->setGeometry(QRect(0, 0, 399, 483));
+        page_4->setGeometry(QRect(0, 0, 189, 179));
         verticalLayout_2 = new QVBoxLayout(page_4);
         verticalLayout_2->setObjectName("verticalLayout_2");
         horizontalLayout = new QHBoxLayout();

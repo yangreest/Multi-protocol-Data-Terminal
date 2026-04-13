@@ -12,6 +12,10 @@
 #include "serial_protocol_parser.h"
 #include <functional>
 
+#include <CommunicationProtocol.h>
+#include <InfraredSpectrumData.h>
+#include <ImageData.h>
+
 
 namespace Ui
 {
@@ -57,6 +61,8 @@ private:
 	QTreeWidgetItem* fileItem;
 	QTreeWidgetItem* imageItem;
 	QTreeWidgetItem* mCurrentItem;
+
+	CommunicationProtocol m_protocol;
 private:
 	SerialDataQueue* m_sendQueue;
 	SerialDataQueue* m_receiveQueue;
@@ -81,12 +87,15 @@ private slots:
 	int getTreeItemLevel(QTreeWidgetItem* item);
 
 	void addTreeConmunicationItem();
+	void addData2TreeCommunication();
 	void addTreeItemImageData(QTreeWidgetItem* parentItem);
+	void addData2TreeImageData();
     void addTreeItemInfraredSpectrumData(QTreeWidgetItem* parentItem);
+	void addData2TreeInfraredSpectrumData(QTreeWidgetItem* parent);
 	QTreeWidgetItem* addChildItem(QTreeWidgetItem* parent, const QString& name, const QString& type);
 	// 根据参数名称查找节点（第一列）
 	QTreeWidgetItem* findItemByName(const QString& name);
-
+	QTreeWidgetItem* createEditableItem(QTreeWidgetItem* parent);
 	void packed_data_received(const std::vector<uint8_t>& data);
 	
 

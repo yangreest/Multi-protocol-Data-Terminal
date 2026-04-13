@@ -5,6 +5,9 @@
 #include <cstring>
 #include "CRC32.h"
 
+#include <ImageData.h>
+
+#include <QCoreApplication>
 /**
  * @brief 通信报文协议类
  * 严格遵循 Q/GDW XXXXX.3-2022 通信报文通用格式
@@ -56,8 +59,11 @@ public:
     // 14. 检测数据文件长度 (uint64, 8 字节) - 不传文件则为 0
     uint64_t detectionFileLength;
     
-    // 15. 检测数据文件 (自定义，M 字节) - .dat 文件二进制数据
+    // 15.1 检测数据文件 (自定义，M 字节) - .dat 文件二进制数据
     std::vector<uint8_t> detectionFileData;
+
+    // 15.2 检测数据文件数据集合
+    std::vector<ImageData> detectionFilesData;
 
     // 16. 校验字节 (uint32, 4 字节) - CRC32 校验
     uint32_t crc32Checksum;
@@ -83,7 +89,61 @@ public:
         serviceDataFormat = 0x01; // XML 格式
         serviceDataLength = 0;
         detectionFileLength = 0;
+        detectionFilesData = {};
         packetTail = 0x03;
+
+        // 加载"modelData\\CommunicationData.dat"文件中的数据,初始化参数
+        loadCommunicationData();
+    }
+
+    // ==================== 公共方法 ====================
+
+    /**
+     * @brief 加载通信数据文件
+     * @return 是否成功加载
+     */
+    bool loadCommunicationData()
+    {
+        // 使用跨平台安全路径
+        const std::string filePath = QCoreApplication::applicationDirPath() .toStdString() + "/modelData/CommunicationData.dat";
+
+        FILE* file = fopen(filePath.c_str(), "rb");
+        if (!file) {
+            // 文件不存在是正常情况，不作为错误处理
+            return false;
+        }
+
+        // 获取文件大小
+        fseek(file, 0, SEEK_END);
+        long fileSize = ftell(file);
+        if (fileSize < 0) {
+            fclose(file);
+            return false;
+        }
+        rewind(file);
+
+        if (fileSize <= 0) {
+            fclose(file);
+            return false;
+        }
+
+        // 添加文件大小限制，防止内存耗尽攻击
+        const long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB 限制
+        if (fileSize > MAX_FILE_SIZE) {
+            fclose(file);
+            return false;
+        }
+
+        // 读取文件内容
+        std::vector<uint8_t> fileData(fileSize);
+        size_t bytesRead = fread(fileData.data(), 1, fileSize, file);
+        fclose(file);
+
+        if (bytesRead != static_cast<size_t>(fileSize)) {
+            return false;
+        }
+        buildFromBytes(fileData);
+        return true;
     }
     
     // ==================== 构建方法 ====================
@@ -225,7 +285,7 @@ public:
             uint8_t byte = static_cast<uint8_t>(std::stoul(byteString, nullptr, 16));
             data.push_back(byte);
         }
-        
+
         // 调用 buildFromBytes
         return buildFromBytes(data);
     }

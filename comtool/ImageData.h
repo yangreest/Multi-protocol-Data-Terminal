@@ -5,6 +5,9 @@
 #include <cstring>
 #include <codecvt>
 
+#include <InfraredSpectrumData.h>
+#include <QCoreApplication>
+
 /**
  * @brief 图像数据格式解析类
  * 根据文件数据格式规范（表 2）定义
@@ -85,8 +88,11 @@ public:
 	// 18. 预留 (自定义，204 字节) [308:511] - 可选
 	std::vector<uint8_t> reserved;
 
-	// 19. 图谱数据 (动态长度) - 依次存放同一检测方法的多类型数据
+	// 19.1 图谱数据 (动态长度) - 依次存放同一检测方法的多类型数据
 	std::vector<std::vector<uint8_t>> spectrumData;
+
+	// 19.2 图谱数据对象集合
+	std::vector<InfraredSpectrumData> infraredSpectrumData;
 
 	// 20. 文件尾部预留 (32 字节) [L-36:L-5] - 必备
 	std::vector<uint8_t> tailReserved;
@@ -118,8 +124,57 @@ public:
 		reserved.resize(204, 0);
 		tailReserved.resize(32, 0);
 		crc32 = 0;
+
+		loadCommunicationData();
 	}
 
+	/**
+	 * @brief 加载通信数据文件
+	 * @return 是否成功加载
+	 */
+	bool loadCommunicationData()
+	{
+		// 使用跨平台安全路径
+		const std::string filePath = QCoreApplication::applicationDirPath().toStdString() + "/modelData/ImageData.dat";
+
+		FILE* file = fopen(filePath.c_str(), "rb");
+		if (!file) {
+			// 文件不存在是正常情况，不作为错误处理
+			return false;
+		}
+
+		// 获取文件大小
+		fseek(file, 0, SEEK_END);
+		long fileSize = ftell(file);
+		if (fileSize < 0) {
+			fclose(file);
+			return false;
+		}
+		rewind(file);
+
+		if (fileSize <= 0) {
+			fclose(file);
+			return false;
+		}
+
+		// 添加文件大小限制，防止内存耗尽攻击
+		const long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB 限制
+		if (fileSize > MAX_FILE_SIZE) {
+			fclose(file);
+			return false;
+		}
+
+		// 读取文件内容
+		std::vector<uint8_t> fileData(fileSize);
+		size_t bytesRead = fread(fileData.data(), 1, fileSize, file);
+		fclose(file);
+
+		if (bytesRead != static_cast<size_t>(fileSize)) {
+			return false;
+		}
+		parseFromBytes(fileData);
+		return true;
+	}
 	// ==================== 解析方法 ====================
 
 	/**
@@ -271,6 +326,12 @@ public:
 				spectrumBytes.assign(data + offset+ spDataOffset, data + offset + spDataOffset + vecDataLength);
 				spDataOffset += vecDataLength;
 				spectrumData.push_back(spectrumBytes);
+
+				InfraredSpectrumData p_spectrumData;
+                if (p_spectrumData.parseFromBytes(spectrumBytes))
+                {
+					infraredSpectrumData.push_back(p_spectrumData);
+                }
 			}
 			offset += spectrumDataLength;
 		}
